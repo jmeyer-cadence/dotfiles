@@ -1,0 +1,13 @@
+*.swp
+.DS_Store
+
+# Python
+*.pyc
+.python-version
+
+# Intellij Idea
+.idea
+
+# VSCode
+*.code-workspace
+.vscode

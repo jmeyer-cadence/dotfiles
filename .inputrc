@@ -1,0 +1,6 @@
+# ======================
+# Enable vim keybindings
+# ======================
+
+set editing-mode vi
+set keymap vi-command
