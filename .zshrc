@@ -1,4 +1,4 @@
-dotfiles=$HOME/dotfiles
+dotfiles=$HOME/.dotfiles
 
 # NOTES:
 # Future idea. All subdirs could include a "sourceme" file with instructions on
@@ -85,17 +85,6 @@ eval "$(pyenv init - bash)"
 #eval "$(pyenv virtualenv-init -)"  # this was slowing down the shell
 			            # see https://github.com/pyenv/pyenv-virtualenv/issues/132
 				    # for debug steps
-# ====
-# Ruby
-# ====
-
-#export PATH="/usr/local/lib/ruby/gems/2.5.0/bin:$PATH"
-#export PATH="/usr/local/opt/ruby/bin:$PATH"
-#export LDFLAGS="-L/usr/local/opt/ruby/lib"
-#export CPPFLAGS="-I/usr/local/opt/ruby/include"
-#export PKG_CONFIG_PATH="/usr/local/opt/ruby/lib/pkgconfig"
-#export RBENV_ROOT=/usr/local/var/rbenv
-#eval "$(rbenv init -)"
 
 # ===========
 # Homebrew
@@ -108,3 +97,8 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 # ================
 export PATH=/opt/homebrew/opt/coreutils/libexec/gnubin:$PATH
 
+# =========
+# Misc
+# =========
+#export PATH="$HOME/.local/bin:$PATH"
+source ~/.zsh-autoenv/autoenv.zsh

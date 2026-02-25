@@ -1,48 +1,106 @@
 #!/bin/bash
 
-# Output
+DOTFILES="$HOME/.dotfiles"
+
+GREEN=$'\033[32m'
+YELLOW=$'\033[33m'
+RED=$'\033[31m'
+RESET=$'\033[0m'
+
+# Output helpers
 
 function starting() {
-    echo -e "\xF0\x9F\x9A\x80  \e[32mStarting: $1\e[0m"
+    echo "▶️  Starting: $1"
 }
 
 function success() {
-    echo -e "\xF0\x9F\x8F\x81  \e[32mSUCCESS: $1\e[0m"
+    echo "✅  ${GREEN}SUCCESS: $1${RESET}"
 }
 
 function failure() {
-    echo -e "\xF0\x9F\x92\xA5  \e[31mFAIL: $1\e[0m"
+    echo "❌  ${RED}FAIL: $1${RESET}"
 }
 
+function warning() {
+    echo "⚠️   ${YELLOW}WARN: $1${RESET}"
+}
+
+function skipping() {
+    echo " ⏭️   Skipping $1"
+}
+
+function ask() {
+    read -r -p "  ❓ $1 [y/N] " response
+    [[ "$response" =~ ^[Yy]$ ]]
+}
+
+function link_file() {
+    local src="$1"
+    local dest="$2"
+    if [ -L "$dest" ]; then
+        success "$dest already symlinked"
+    elif [ -e "$dest" ]; then
+        warning "$dest exists but is not a symlink — remove it manually to replace"
+    else
+        ln -s "$src" "$dest" && echo "  🔗 Linked: $dest -> $src"
+    fi
+}
+
+# ================
 # Install packages
+# ================
 
-if ! [ -x "$(command -v brew)" ]; then
-  starting "install brew"
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  eval "$(/opt/homebrew/bin/brew shellenv)"
+if [ -x "$(command -v brew)" ]; then
+    success "brew already installed"
+elif ask "Homebrew not found. Install it?"; then
+    starting "install brew"
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+    success "brew installed"
+else
+    skipping "brew"
 fi
 
-if ! [ -x "$(command -v gls)" ]; then
-  starting "install coreutils"
-  brew install coreutils
+if [ -x "$(command -v gls)" ]; then
+    success "coreutils already installed"
+elif ask "coreutils not found. Install it?"; then
+    starting "install coreutils"
+    brew install coreutils
+    success "coreutils installed"
+else
+    skipping "coreutils"
 fi
 
-if ! [ -x "$(command -v pyenv)" ]; then
-  starting "install pyenv"
-  brew install pyenv
+if [ -x "$(command -v pyenv)" ]; then
+    success "pyenv already installed"
+elif ask "pyenv not found. Install it?"; then
+    starting "install pyenv"
+    brew install pyenv
+    success "pyenv installed"
+else
+    skipping "pyenv"
 fi
 
-# Source zsh
-starting "source zshrc"
-ln -s ~/dotfiles/.zshrc ~/.zshrc
-source ~/.zshrc
+# =============
+# Link dotfiles
+# =============
 
-starting "link remaining dotfiles"
-ln -s ~/dotfiles/.gitconfig ~/.gitconfig
-ln -s ~/dotfiles/.gitignore_global ~/.gitignore_global
-ln -s ~/dotfiles/.inputrc ~/.inputrc
-ln -s ~/dotfiles/.lesshst ~/.lesshst
-ln -s ~/dotfiles/.pyrc ~/.pyrc
-ln -s ~/dotfiles/.serverlessrc ~/.serverlessrc
+starting "linking dotfiles"
+
+link_file "$DOTFILES/.zshrc"            "$HOME/.zshrc"
+link_file "$DOTFILES/.gitconfig"        "$HOME/.gitconfig"
+link_file "$DOTFILES/.gitignore_global" "$HOME/.gitignore_global"
+link_file "$DOTFILES/.inputrc"          "$HOME/.inputrc"
+link_file "$DOTFILES/.lesshst"          "$HOME/.lesshst"
+link_file "$DOTFILES/.pyrc"             "$HOME/.pyrc"
+
+
+# ========
+# Complete
+# ========
 
 success "setup complete!"
+
+echo ""
+echo "  Open a new terminal (or run 'source ~/.zshrc' in zsh) to apply changes."
+echo ""
