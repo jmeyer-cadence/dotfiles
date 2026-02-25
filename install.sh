@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DOTFILES="$HOME/.dotfiles"
+DOTFILES="$HOME/dotfiles"
 
 GREEN=$'\033[32m'
 YELLOW=$'\033[33m'

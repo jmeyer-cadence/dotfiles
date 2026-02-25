@@ -1,4 +1,4 @@
-dotfiles=$HOME/.dotfiles
+dotfiles=$HOME/dotfiles
 
 # NOTES:
 # Future idea. All subdirs could include a "sourceme" file with instructions on
