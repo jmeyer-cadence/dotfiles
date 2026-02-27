@@ -2,30 +2,23 @@
 """Claude Code desktop notification hook.
 
 Works for both Notification and Stop hook events.
-Fires a macOS desktop notification via terminal-notifier (preferred) or osascript.
+Sends notifications via iTerm2's escape sequence, which writes directly to
+the TTY so macOS notification permissions are handled by iTerm2 itself.
 """
 
 import json
-import shutil
-import subprocess
 import sys
 
 
-def notify(title: str, message: str, sound: str = "Glass") -> None:
-    if shutil.which("terminal-notifier"):
-        subprocess.run([
-            "terminal-notifier",
-            "-title", title,
-            "-message", message,
-            "-sound", sound,
-        ])
-    else:
-        script = (
-            f"display notification {json.dumps(message)} "
-            f"with title {json.dumps(title)} "
-            f'sound name "{sound}"'
-        )
-        subprocess.run(["osascript", "-e", script])
+def notify(title: str, message: str) -> None:
+    # iTerm2 proprietary escape sequence: ESC ] 9 ; <message> BEL
+    # Writing to /dev/tty bypasses any stdout redirection from the hook runner.
+    text = f"{title}: {message}"
+    try:
+        with open("/dev/tty", "w") as tty:
+            tty.write(f"\033]9;{text}\007")
+    except OSError:
+        pass
 
 
 def main() -> None:
@@ -47,7 +40,7 @@ def main() -> None:
         else:
             title = "Claude Code"
 
-        notify(title, message, sound="Ping")
+        notify(title, message)
 
     elif event == "Stop":
         # Avoid notifying when stop is itself triggered by a stop hook
@@ -59,7 +52,7 @@ def main() -> None:
             last_msg = last_msg[:97] + "..."
 
         message = last_msg if last_msg else "Agent has completed"
-        notify("Claude - Done", message, sound="Glass")
+        notify("Claude - Done", message)
 
 
 if __name__ == "__main__":
