@@ -81,6 +81,26 @@ else
     skipping "pyenv"
 fi
 
+if [ -x "$(command -v tmux)" ]; then
+    success "tmux already installed"
+elif ask "tmux not found. Install it?"; then
+    starting "install tmux"
+    brew install tmux
+    success "tmux installed"
+else
+    skipping "tmux"
+fi
+
+if [ -x "$(command -v workmux)" ]; then
+    success "workmux already installed"
+elif ask "workmux not found. Install it?"; then
+    starting "install workmux"
+    brew install raine/workmux/workmux
+    success "workmux installed"
+else
+    skipping "workmux"
+fi
+
 # =============
 # Link dotfiles
 # =============
