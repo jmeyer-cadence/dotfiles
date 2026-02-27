@@ -2,23 +2,57 @@
 """Claude Code desktop notification hook.
 
 Works for both Notification and Stop hook events.
-Sends notifications via iTerm2's escape sequence, which writes directly to
-the TTY so macOS notification permissions are handled by iTerm2 itself.
+Uses osascript to fire macOS notifications, but only when the
+current iTerm2 tab is not the active/focused tab.
 """
 
 import json
+import os
+import re
+import subprocess
 import sys
 
 
-def notify(title: str, message: str) -> None:
-    # iTerm2 proprietary escape sequence: ESC ] 9 ; <message> BEL
-    # Writing to /dev/tty bypasses any stdout redirection from the hook runner.
-    text = f"{title}: {message}"
-    try:
-        with open("/dev/tty", "w") as tty:
-            tty.write(f"\033]9;{text}\007")
-    except OSError:
-        pass
+def is_active_tab() -> bool:
+    """Return True if our iTerm2 tab is currently focused."""
+    session_id = os.environ.get("ITERM_SESSION_ID", "")
+    # ITERM_SESSION_ID format: w0t0p0:UUID
+    match = re.search(r":([A-F0-9-]+)$", session_id, re.IGNORECASE) if session_id else None
+    our_uuid = match.group(1) if match else None
+
+    script = """
+tell application "System Events"
+    set frontApp to name of first application process whose frontmost is true
+end tell
+if frontApp is not "iTerm2" then
+    return ""
+end if
+tell application "iTerm2"
+    try
+        return unique ID of current session of current tab of current window
+    on error
+        return ""
+    end try
+end tell
+"""
+    result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+    active_uuid = result.stdout.strip()
+
+    if not active_uuid or not our_uuid:
+        return True  # Can't determine, assume active (don't spam)
+    return active_uuid.upper() == our_uuid.upper()
+
+
+def notify(title: str, message: str, sound: str = "Glass") -> None:
+    if is_active_tab():
+        return
+
+    script = (
+        f"display notification {json.dumps(message)} "
+        f"with title {json.dumps(title)} "
+        f'sound name "{sound}"'
+    )
+    subprocess.run(["osascript", "-e", script])
 
 
 def main() -> None:
@@ -40,7 +74,7 @@ def main() -> None:
         else:
             title = "Claude Code"
 
-        notify(title, message)
+        notify(title, message, sound="Ping")
 
     elif event == "Stop":
         # Avoid notifying when stop is itself triggered by a stop hook

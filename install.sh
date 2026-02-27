@@ -101,15 +101,6 @@ else
     skipping "workmux"
 fi
 
-if [ -x "$(command -v terminal-notifier)" ]; then
-    success "terminal-notifier already installed"
-elif ask "terminal-notifier not found. Install it?"; then
-    starting "install terminal-notifier"
-    brew install terminal-notifier
-    success "terminal-notifier installed"
-else
-    skipping "terminal-notifier"
-fi
 
 # =============
 # Link dotfiles
