@@ -114,7 +114,7 @@ link_file "$DOTFILES/.inputrc"          "$HOME/.inputrc"
 link_file "$DOTFILES/.lesshst"          "$HOME/.lesshst"
 link_file "$DOTFILES/.pyrc"             "$HOME/.pyrc"
 link_file "$DOTFILES/.tmux.conf"        "$HOME/.tmux.conf"
-link_file "$DOTFILES/claude/CLAUDE.md"  "$HOME/.claude/CLAUDE.md"
+link_file "$DOTFILES/.claude/CLAUDE.md"  "$HOME/.claude/CLAUDE.md"
 
 
 # ========
