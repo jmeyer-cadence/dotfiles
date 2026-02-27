@@ -2,21 +2,30 @@
 """Claude Code desktop notification hook.
 
 Works for both Notification and Stop hook events.
-Fires a macOS desktop notification via osascript.
+Fires a macOS desktop notification via terminal-notifier (preferred) or osascript.
 """
 
 import json
+import shutil
 import subprocess
 import sys
 
 
 def notify(title: str, message: str, sound: str = "Glass") -> None:
-    script = (
-        f"display notification {json.dumps(message)} "
-        f"with title {json.dumps(title)} "
-        f'sound name "{sound}"'
-    )
-    subprocess.run(["osascript", "-e", script])
+    if shutil.which("terminal-notifier"):
+        subprocess.run([
+            "terminal-notifier",
+            "-title", title,
+            "-message", message,
+            "-sound", sound,
+        ])
+    else:
+        script = (
+            f"display notification {json.dumps(message)} "
+            f"with title {json.dumps(title)} "
+            f'sound name "{sound}"'
+        )
+        subprocess.run(["osascript", "-e", script])
 
 
 def main() -> None:
