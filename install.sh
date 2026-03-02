@@ -101,6 +101,16 @@ else
     skipping "workmux"
 fi
 
+if [ -x "$(command -v difit)" ]; then
+    success "difit already installed"
+elif ask "difit not found. Install it? (requires npm)"; then
+    starting "install difit"
+    npm install -g difit
+    success "difit installed"
+else
+    skipping "difit"
+fi
+
 
 # =============
 # Link dotfiles
