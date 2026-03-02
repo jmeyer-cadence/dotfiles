@@ -125,6 +125,17 @@ else
     skipping "difit"
 fi
 
+if [ -x "$(command -v go)" ]; then
+    success "go already installed"
+elif ask "go not found. Install it?"; then
+    starting "install go"
+    brew install go
+    success "go installed"
+else
+    skipping "go"
+fi
+
+
 
 # =============
 # Link dotfiles

@@ -11,10 +11,9 @@ dotfiles=$HOME/dotfiles
 # Remove details from terminal prompt
 export PS1="$ "
 
-# Go
-#export GOPATH=$(go env GOPATH)
-#export GOROOT="$(brew --prefix golang)/libexec"
-#export PATH="$PATH:${GOPATH}/bin:${GOROOT}/bin"
+# Go (brew installs `go` to /opt/homebrew/bin via shellenv above)
+export GOPATH="$HOME/go"
+export PATH="$PATH:$GOPATH/bin"
 
 
 # Editors
