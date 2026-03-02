@@ -46,9 +46,9 @@ function link_file() {
     fi
 }
 
-# ================
-# Install packages
-# ================
+# ====================
+# Package managers
+# ====================
 
 if [ -x "$(command -v brew)" ]; then
     success "brew already installed"
@@ -60,6 +60,20 @@ elif ask "Homebrew not found. Install it?"; then
 else
     skipping "brew"
 fi
+
+if [ -x "$(command -v npm)" ]; then
+    success "npm already installed"
+elif ask "npm not found. Install it? (via node)"; then
+    starting "install node"
+    brew install node
+    success "node/npm installed"
+else
+    skipping "npm"
+fi
+
+# ================
+# Install packages
+# ================
 
 if [ -x "$(command -v gls)" ]; then
     success "coreutils already installed"
