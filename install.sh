@@ -145,15 +145,6 @@ else
     skipping "postgresql"
 fi
 
-if brew list --cask hammerspoon &>/dev/null; then
-    success "hammerspoon already installed"
-elif ask "Hammerspoon not found. Install it? (window manager)"; then
-    starting "install hammerspoon"
-    brew install --cask hammerspoon
-    success "hammerspoon installed"
-else
-    skipping "hammerspoon"
-fi
 
 if [ -d "/Applications/Karabiner-Elements.app" ]; then
     if pgrep -qf "Karabiner-Elements"; then
@@ -196,8 +187,8 @@ link_file "$DOTFILES/.tmux.conf"        "$HOME/.tmux.conf"
 link_file "$DOTFILES/.claude/CLAUDE.md"  "$HOME/.claude/CLAUDE.md"
 link_file "$DOTFILES/.claude/hooks"      "$HOME/.claude/hooks"
 
-mkdir -p "$HOME/.hammerspoon"
-link_file "$DOTFILES/hammerspoon/init.lua"          "$HOME/.hammerspoon/init.lua"
+
+chmod +x "$DOTFILES/scripts/snap-window.sh"
 
 mkdir -p "$HOME/.config/karabiner"
 karabiner_src="$DOTFILES/karabiner/karabiner.json"
