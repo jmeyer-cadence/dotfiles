@@ -135,7 +135,51 @@ else
     skipping "go"
 fi
 
+if brew list postgresql@18 &>/dev/null; then
+    success "postgresql already installed"
+elif ask "postgresql not found. Install it? (provides psql)"; then
+    starting "install postgresql"
+    brew install postgresql@18
+    success "postgresql installed"
+else
+    skipping "postgresql"
+fi
 
+if brew list --cask hammerspoon &>/dev/null; then
+    success "hammerspoon already installed"
+elif ask "Hammerspoon not found. Install it? (window manager)"; then
+    starting "install hammerspoon"
+    brew install --cask hammerspoon
+    success "hammerspoon installed"
+else
+    skipping "hammerspoon"
+fi
+
+if brew list --cask karabiner-elements &>/dev/null; then
+    success "karabiner-elements already installed"
+elif ask "Karabiner-Elements not found. Install it? (hyper key — Caps Lock remapping)"; then
+    starting "install karabiner-elements"
+    brew install --cask karabiner-elements
+    success "karabiner-elements installed"
+else
+    skipping "karabiner-elements"
+fi
+
+
+# ======================
+# Work git identity stub
+# ======================
+
+if [ -f "$HOME/.gitconfig-work" ]; then
+    success "~/.gitconfig-work already exists"
+else
+    cat > "$HOME/.gitconfig-work" <<'EOF'
+[user]
+	name = your-work-name
+	email = your-work-email@example.com
+EOF
+    warning "Created stub ~/.gitconfig-work — update it with your work identity"
+fi
 
 # =============
 # Link dotfiles
@@ -151,6 +195,12 @@ link_file "$DOTFILES/.pyrc"             "$HOME/.pyrc"
 link_file "$DOTFILES/.tmux.conf"        "$HOME/.tmux.conf"
 link_file "$DOTFILES/.claude/CLAUDE.md"  "$HOME/.claude/CLAUDE.md"
 link_file "$DOTFILES/.claude/hooks"      "$HOME/.claude/hooks"
+
+mkdir -p "$HOME/.hammerspoon"
+link_file "$DOTFILES/hammerspoon/init.lua"          "$HOME/.hammerspoon/init.lua"
+
+mkdir -p "$HOME/.config/karabiner"
+link_file "$DOTFILES/karabiner/karabiner.json"      "$HOME/.config/karabiner/karabiner.json"
 
 
 # ========
