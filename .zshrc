@@ -73,6 +73,12 @@ source $dotfiles/bash/aliases.sh
 
 export PATH="/usr/local/opt/mysql-client/bin:$PATH"
 
+# ==========
+# PostgreSQL
+# ==========
+
+export PATH="/opt/homebrew/opt/postgresql@18/bin:$PATH"
+
 # ======
 # Python
 # ======
