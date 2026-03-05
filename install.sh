@@ -206,10 +206,13 @@ if [ ! -f "$karabiner_dest" ]; then
     cp "$karabiner_src" "$karabiner_dest" && echo "  🔗 Copied: $karabiner_dest"
 elif diff -q "$karabiner_src" "$karabiner_dest" &>/dev/null; then
     success "karabiner config up to date"
-elif ask "karabiner config differs from dotfiles. Replace $karabiner_dest with dotfiles version?"; then
-    cp "$karabiner_src" "$karabiner_dest" && success "karabiner config updated"
 else
-    skipping "karabiner config"
+    diff "$karabiner_src" "$karabiner_dest"
+    if ask "Replace $karabiner_dest with dotfiles version?"; then
+        cp "$karabiner_src" "$karabiner_dest" && success "karabiner config updated"
+    else
+        skipping "karabiner config"
+    fi
 fi
 
 
