@@ -58,6 +58,16 @@
           }
         ]
       }
+    ],
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/worktree_create.sh"
+          }
+        ]
+      }
     ]
   },
   "permissions": {

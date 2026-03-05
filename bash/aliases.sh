@@ -46,6 +46,19 @@ alias gprune="git remote prune origin && git branch --merged master | grep -v '^
 alias gtempignore="git update-index --assume-unchanged"
 alias gtempunignore="git update-index --no-assume-unchanged"
 
+# Worktrees — siblings to the current worktree's parent (bare repo layout)
+git_worktree_add() {
+    local name="$1"; shift
+    git worktree add "$(dirname "$(git rev-parse --show-toplevel)")/$name" "$@"
+}
+git_worktree_remove() {
+    local name="$1"
+    git worktree remove "$(dirname "$(git rev-parse --show-toplevel)")/$name"
+}
+alias gwt=git_worktree_add
+alias gwtrm=git_worktree_remove
+alias gwtls="git worktree list"
+
 # should delete branches on local that have been merged to $1 (recommend: upstream or origin)
 # usage example: "gclean upstream main"
 git_clean_local_merged() {
