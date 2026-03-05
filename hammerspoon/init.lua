@@ -10,7 +10,7 @@ local function moveWindowToRight()
     win:setFrame({ x = screen.x + screen.w / 2, y = screen.y, w = screen.w / 2, h = screen.h })
 end
 
-local hyper = { "ctrl", "cmd", "alt", "shift" }
+local hyper = { "ctrl", "cmd" }
 
 hs.hotkey.bind(hyper, "h", moveWindowToLeft)
 hs.hotkey.bind(hyper, "l", moveWindowToRight)

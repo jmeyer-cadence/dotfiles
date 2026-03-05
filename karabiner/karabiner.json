@@ -4,7 +4,7 @@
             "complex_modifications": {
                 "rules": [
                     {
-                        "description": "Caps Lock → Hyper (held) / Escape (tapped)",
+                        "description": "Caps Lock → Control (held) / Escape (tapped)",
                         "manipulators": [
                             {
                                 "from": {
@@ -13,8 +13,7 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "left_shift",
-                                        "modifiers": ["left_command", "left_control", "left_option"]
+                                        "key_code": "left_control"
                                     }
                                 ],
                                 "to_if_alone": [{ "key_code": "escape" }],
