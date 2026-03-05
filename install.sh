@@ -156,7 +156,7 @@ else
 fi
 
 if [ -d "/Applications/Karabiner-Elements.app" ]; then
-    if pgrep -q "Karabiner-Elements"; then
+    if pgrep -qf "Karabiner-Elements"; then
         success "karabiner-elements installed and running"
     else
         warning "karabiner-elements installed but not running — open it from /Applications"
