@@ -155,14 +155,14 @@ else
     skipping "hammerspoon"
 fi
 
-if brew list --cask karabiner-elements &>/dev/null; then
-    success "karabiner-elements already installed"
-elif ask "Karabiner-Elements not found. Install it? (hyper key — Caps Lock remapping)"; then
-    starting "install karabiner-elements"
-    brew install --cask karabiner-elements
-    success "karabiner-elements installed"
+if [ -d "/Applications/Karabiner-Elements.app" ]; then
+    if pgrep -q "Karabiner-Elements"; then
+        success "karabiner-elements installed and running"
+    else
+        warning "karabiner-elements installed but not running — open it from /Applications"
+    fi
 else
-    skipping "karabiner-elements"
+    warning "karabiner-elements not installed — download from https://karabiner-elements.pqrs.org"
 fi
 
 
