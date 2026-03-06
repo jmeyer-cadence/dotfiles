@@ -86,7 +86,7 @@ export PATH="/opt/homebrew/opt/postgresql@18/bin:$PATH"
 export PATH="~/Library/Python/3.6/bin:$PATH"
 export PYTHONSTARTUP="$dotfiles/.pyrc"
 
-eval "$(pyenv init - bash)"
+eval "$(pyenv init - zsh)"
 #eval "$(pyenv virtualenv-init -)"  # this was slowing down the shell
 			            # see https://github.com/pyenv/pyenv-virtualenv/issues/132
 				    # for debug steps
