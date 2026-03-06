@@ -12,7 +12,12 @@ If you detect improvements or changes that should be made to dotfiles, go ahead 
 
 The dotfiles repo lives at `~/dotfiles` (master branch). Shell config symlinks (e.g. `~/.zshrc`) point to files in the main repo, not to any worktree. When working in a worktree, always apply dotfile fixes to the main repo (`~/dotfiles`) as well so they take effect immediately.
 
-Worktree branches must stay in sync with master. At the end of any session in a worktree, rebase the worktree branch onto master (`git rebase master`) to prevent divergence.
+Worktree workflow — always follow this order:
+1. Commit all changes to the worktree branch first
+2. Fast-forward master to match: `cd ~/dotfiles && git merge --ff-only <worktree-branch>`
+3. Rebase the worktree branch onto master: `cd <worktree> && git rebase master`
+
+Never commit the same change independently to both master and a worktree branch.
 
 If a change introduces a new tool or CLI dependency, add a corresponding install block to `install.sh` following the existing pattern (check if installed, prompt to install via brew, skip if declined).
 
