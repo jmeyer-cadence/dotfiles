@@ -21,35 +21,6 @@
                             }
                         ]
                     },
-                    {
-                        "description": "Window snapping — Ctrl+Cmd+H/L/K",
-                        "manipulators": [
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "h",
-                                    "modifiers": { "mandatory": ["control", "command"] }
-                                },
-                                "to": [{ "shell_command": "$HOME/dotfiles/scripts/snap-window.sh left" }]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "l",
-                                    "modifiers": { "mandatory": ["control", "command"] }
-                                },
-                                "to": [{ "shell_command": "$HOME/dotfiles/scripts/snap-window.sh right" }]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "k",
-                                    "modifiers": { "mandatory": ["control", "command"] }
-                                },
-                                "to": [{ "shell_command": "$HOME/dotfiles/scripts/snap-window.sh maximize" }]
-                            }
-                        ]
-                    }
                 ]
             },
             "name": "Default",

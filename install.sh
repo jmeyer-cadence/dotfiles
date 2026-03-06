@@ -188,8 +188,6 @@ link_file "$DOTFILES/.claude/CLAUDE.md"  "$HOME/.claude/CLAUDE.md"
 link_file "$DOTFILES/.claude/hooks"      "$HOME/.claude/hooks"
 
 
-chmod +x "$DOTFILES/scripts/snap-window.sh"
-
 mkdir -p "$HOME/.config/karabiner"
 karabiner_src="$DOTFILES/karabiner/karabiner.json"
 karabiner_dest="$HOME/.config/karabiner/karabiner.json"
