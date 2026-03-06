@@ -105,5 +105,5 @@ export PATH=/opt/homebrew/opt/coreutils/libexec/gnubin:$PATH
 # =========
 # Misc
 # =========
-#export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
 source ~/.zsh-autoenv/autoenv.zsh
