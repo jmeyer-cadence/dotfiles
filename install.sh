@@ -200,7 +200,7 @@ if verify_tiling; then
 else
     starting "remapping window tiling hotkeys to ctrl+cmd+h/l"
     if remap_tiling; then
-        /System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u
+        killall WindowManager 2>/dev/null || true
         if verify_tiling; then
             success "window tiling hotkeys updated and verified"
         else
