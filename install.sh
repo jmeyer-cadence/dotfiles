@@ -264,7 +264,7 @@ if [ ! -f "$karabiner_dest" ]; then
 elif diff -q "$karabiner_src" "$karabiner_dest" &>/dev/null; then
     success "karabiner config up to date"
 else
-    diff "$karabiner_src" "$karabiner_dest"
+    git diff --no-index --src-prefix="dotfiles: " --dst-prefix="~/.config: " "$karabiner_src" "$karabiner_dest"; true
     if ask "Replace ${karabiner_dest/#$HOME/~} with dotfiles version?"; then
         cp "$karabiner_src" "$karabiner_dest" && success "karabiner config updated"
     else
