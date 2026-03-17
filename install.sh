@@ -261,17 +261,6 @@ else
 fi
 
 
-# =======================
-# macOS keyboard shortcuts
-# =======================
-
-starting "setting macOS keyboard shortcuts"
-defaults write -g NSUserKeyEquivalents '{
-  "Tile Left Half" = "@^h";
-  "Tile Right Half" = "@^l";
-}'
-success "keyboard shortcuts set (Ctrl+Cmd+H/L for tile left/right)"
-
 # ========
 # Complete
 # ========
