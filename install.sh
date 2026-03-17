@@ -161,9 +161,11 @@ fi
 # macOS window tiling hotkeys
 # ===========================
 
-# Symbolic hotkey IDs for built-in window tiling (ctrl+cmd+h/l)
+# Symbolic hotkey IDs and keys for built-in window tiling
 TILE_LEFT_ID=240;   KEY_H_UNICODE=104; KEY_H_CODE=4
 TILE_RIGHT_ID=241;  KEY_L_UNICODE=108; KEY_L_CODE=37
+TILE_FILL_ID=237;   KEY_K_UNICODE=107; KEY_K_CODE=40
+TILE_CENTER_ID=238; KEY_J_UNICODE=106; KEY_J_CODE=38
 # Modifier flags: ctrl (0x40000) + cmd (0x100000) = 0x140000
 CTRL_CMD_FLAGS=1310720
 
@@ -175,8 +177,10 @@ result = subprocess.run(['defaults', 'export', 'com.apple.symbolichotkeys', '-']
 prefs = plistlib.loads(result.stdout)
 hotkeys = prefs.setdefault('AppleSymbolicHotKeys', {})
 entry = lambda u, k: {'enabled': True, 'value': {'parameters': [u, k, $CTRL_CMD_FLAGS], 'type': 'standard'}}
-hotkeys['$TILE_LEFT_ID']  = entry($KEY_H_UNICODE, $KEY_H_CODE)
-hotkeys['$TILE_RIGHT_ID'] = entry($KEY_L_UNICODE, $KEY_L_CODE)
+hotkeys['$TILE_LEFT_ID']   = entry($KEY_H_UNICODE, $KEY_H_CODE)
+hotkeys['$TILE_RIGHT_ID']  = entry($KEY_L_UNICODE, $KEY_L_CODE)
+hotkeys['$TILE_FILL_ID']   = entry($KEY_K_UNICODE, $KEY_K_CODE)
+hotkeys['$TILE_CENTER_ID'] = entry($KEY_J_UNICODE, $KEY_J_CODE)
 r = subprocess.run(['defaults', 'import', 'com.apple.symbolichotkeys', '-'], input=plistlib.dumps(prefs))
 sys.exit(r.returncode)
 EOF
@@ -192,12 +196,15 @@ hotkeys = prefs.get('AppleSymbolicHotKeys', {})
 def check(id_, unicode_, code):
     params = hotkeys.get(str(id_), {}).get('value', {}).get('parameters', [])
     return params == [unicode_, code, $CTRL_CMD_FLAGS]
-ok = check($TILE_LEFT_ID, $KEY_H_UNICODE, $KEY_H_CODE) and check($TILE_RIGHT_ID, $KEY_L_UNICODE, $KEY_L_CODE)
+ok = (check($TILE_LEFT_ID,   $KEY_H_UNICODE, $KEY_H_CODE) and
+     check($TILE_RIGHT_ID,  $KEY_L_UNICODE, $KEY_L_CODE) and
+     check($TILE_FILL_ID,   $KEY_K_UNICODE, $KEY_K_CODE) and
+     check($TILE_CENTER_ID, $KEY_J_UNICODE, $KEY_J_CODE))
 sys.exit(0 if ok else 1)
 EOF
 }
 
-starting "applying window tiling hotkeys (ctrl+cmd+h/l)"
+starting "applying window tiling hotkeys (ctrl+cmd+h/j/k/l)"
 if remap_tiling; then
     killall WindowManager 2>/dev/null || true
     if verify_tiling; then
