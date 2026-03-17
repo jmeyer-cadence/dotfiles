@@ -197,19 +197,16 @@ sys.exit(0 if ok else 1)
 EOF
 }
 
-if verify_tiling; then
-    success "window tiling hotkeys already set to ctrl+cmd+h/l"
-else
-    starting "remapping window tiling hotkeys to ctrl+cmd+h/l"
-    if remap_tiling; then
-        if verify_tiling; then
-            success "window tiling hotkeys updated and verified"
-        else
-            failure "window tiling hotkeys written but verification failed"
-        fi
+starting "applying window tiling hotkeys (ctrl+cmd+h/l)"
+if remap_tiling; then
+    killall WindowManager 2>/dev/null || true
+    if verify_tiling; then
+        success "window tiling hotkeys applied and verified"
     else
-        failure "window tiling hotkeys could not be written"
+        failure "window tiling hotkeys applied but verification failed"
     fi
+else
+    failure "window tiling hotkeys could not be written"
 fi
 
 
