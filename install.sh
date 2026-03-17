@@ -171,8 +171,8 @@ TILE_RIGHT_ID=241
 KEY_H_UNICODE=104; KEY_H_CODE=4
 KEY_L_UNICODE=108; KEY_L_CODE=37
 
-# Modifier flags: ctrl (0x40000) + cmd (0x800000) = 0x840000
-CTRL_CMD_FLAGS=8650752
+# Modifier flags: ctrl (0x40000) + cmd (0x100000) = 0x140000
+CTRL_CMD_FLAGS=1310720
 
 plist_get() { /usr/libexec/PlistBuddy -c "Print $1" "$HOTKEYS_PLIST" 2>/dev/null; }
 plist_set() { /usr/libexec/PlistBuddy -c "Set $1 $2" "$HOTKEYS_PLIST"; }
