@@ -7,30 +7,34 @@ YELLOW=$'\033[33m'
 RED=$'\033[31m'
 RESET=$'\033[0m'
 
+_INDENT=""
+
 # Output helpers
 
 function starting() {
-    echo "▶️  Starting: $1"
+    echo ""
+    echo "▶️  $1"
+    _INDENT="  │  "
 }
 
 function success() {
-    echo "✅  ${GREEN}SUCCESS: $1${RESET}"
+    echo "${_INDENT}✅  ${GREEN}$1${RESET}"
 }
 
 function failure() {
-    echo "❌  ${RED}FAIL: $1${RESET}"
+    echo "${_INDENT}❌  ${RED}$1${RESET}"
 }
 
 function warning() {
-    echo "⚠️   ${YELLOW}WARN: $1${RESET}"
+    echo "${_INDENT}⚠️   ${YELLOW}$1${RESET}"
 }
 
 function skipping() {
-    echo " ⏭️   Skipping $1"
+    echo "${_INDENT}⏭️   Skipping $1"
 }
 
 function ask() {
-    read -r -p "  ❓ $1 [y/N] " response
+    read -r -p "${_INDENT}❓ $1 [y/N] " response
     [[ "$response" =~ ^[Yy]$ ]]
 }
 
@@ -42,7 +46,7 @@ function link_file() {
     elif [ -e "$dest" ]; then
         warning "$dest exists but is not a symlink — remove it manually to replace"
     else
-        ln -s "$src" "$dest" && echo "  🔗 Linked: $dest -> $src"
+        ln -s "$src" "$dest" && echo "${_INDENT}🔗 Linked: $dest -> $src"
     fi
 }
 
@@ -50,10 +54,11 @@ function link_file() {
 # Package managers
 # ====================
 
+starting "Package managers"
+
 if [ -x "$(command -v brew)" ]; then
     success "brew already installed"
 elif ask "Homebrew not found. Install it?"; then
-    starting "install brew"
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     eval "$(/opt/homebrew/bin/brew shellenv)"
     success "brew installed"
@@ -64,7 +69,6 @@ fi
 if [ -x "$(command -v npm)" ]; then
     success "npm already installed"
 elif ask "npm not found. Install it? (via node)"; then
-    starting "install node"
     brew install node
     success "node/npm installed"
 else
@@ -75,10 +79,11 @@ fi
 # Install packages
 # ================
 
+starting "Install packages"
+
 if [ -x "$(command -v gls)" ]; then
     success "coreutils already installed"
 elif ask "coreutils not found. Install it?"; then
-    starting "install coreutils"
     brew install coreutils
     success "coreutils installed"
 else
@@ -88,7 +93,6 @@ fi
 if [ -x "$(command -v pyenv)" ]; then
     success "pyenv already installed"
 elif ask "pyenv not found. Install it?"; then
-    starting "install pyenv"
     brew install pyenv
     success "pyenv installed"
 else
@@ -98,7 +102,6 @@ fi
 if [ -x "$(command -v tmux)" ]; then
     success "tmux already installed"
 elif ask "tmux not found. Install it?"; then
-    starting "install tmux"
     brew install tmux
     success "tmux installed"
 else
@@ -108,7 +111,6 @@ fi
 if [ -x "$(command -v workmux)" ]; then
     success "workmux already installed"
 elif ask "workmux not found. Install it?"; then
-    starting "install workmux"
     brew install raine/workmux/workmux
     success "workmux installed"
 else
@@ -118,7 +120,6 @@ fi
 if [ -x "$(command -v difit)" ]; then
     success "difit already installed"
 elif ask "difit not found. Install it? (requires npm)"; then
-    starting "install difit"
     npm install -g difit
     success "difit installed"
 else
@@ -128,7 +129,6 @@ fi
 if [ -x "$(command -v go)" ]; then
     success "go already installed"
 elif ask "go not found. Install it?"; then
-    starting "install go"
     brew install go
     success "go installed"
 else
@@ -138,7 +138,6 @@ fi
 if brew list postgresql@18 &>/dev/null; then
     success "postgresql already installed"
 elif ask "postgresql not found. Install it? (provides psql)"; then
-    starting "install postgresql"
     brew install postgresql@18
     success "postgresql installed"
 else
@@ -204,7 +203,7 @@ sys.exit(0 if ok else 1)
 EOF
 }
 
-starting "applying window tiling hotkeys (ctrl+cmd+h/j/k/l)"
+starting "Applying window tiling hotkeys (ctrl+cmd+h/j/k/l)"
 if remap_tiling; then
     killall WindowManager 2>/dev/null || true
     if verify_tiling; then
@@ -221,6 +220,8 @@ fi
 # Work git identity stub
 # ======================
 
+starting "Work git identity"
+
 if [ -f "$HOME/.gitconfig-work" ]; then
     success "~/.gitconfig-work already exists"
 else
@@ -236,7 +237,7 @@ fi
 # Link dotfiles
 # =============
 
-starting "linking dotfiles"
+starting "Linking dotfiles"
 
 link_file "$DOTFILES/.zshrc"            "$HOME/.zshrc"
 link_file "$DOTFILES/.gitconfig"        "$HOME/.gitconfig"
@@ -253,7 +254,7 @@ mkdir -p "$HOME/.config/karabiner"
 karabiner_src="$DOTFILES/karabiner/karabiner.json"
 karabiner_dest="$HOME/.config/karabiner/karabiner.json"
 if [ ! -f "$karabiner_dest" ]; then
-    cp "$karabiner_src" "$karabiner_dest" && echo "  🔗 Copied: $karabiner_dest"
+    cp "$karabiner_src" "$karabiner_dest" && echo "${_INDENT}🔗 Copied: $karabiner_dest"
 elif diff -q "$karabiner_src" "$karabiner_dest" &>/dev/null; then
     success "karabiner config up to date"
 else
@@ -270,6 +271,7 @@ fi
 # Complete
 # ========
 
+_INDENT=""
 success "setup complete!"
 
 echo ""
