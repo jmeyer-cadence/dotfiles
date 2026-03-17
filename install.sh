@@ -178,6 +178,12 @@ else
 fi
 
 
+# =======
+# Hotkeys
+# =======
+
+starting "Hotkeys"
+
 if [ -d "/Applications/Karabiner-Elements.app" ]; then
     if pgrep -qf "Karabiner-Elements"; then
         success "karabiner-elements installed and running"
@@ -187,11 +193,6 @@ if [ -d "/Applications/Karabiner-Elements.app" ]; then
 else
     warning "karabiner-elements not installed — download from https://karabiner-elements.pqrs.org"
 fi
-
-
-# ===========================
-# macOS window tiling hotkeys
-# ===========================
 
 # Symbolic hotkey IDs and keys for built-in window tiling
 TILE_LEFT_ID=240;   KEY_H_UNICODE=104; KEY_H_CODE=4
@@ -236,7 +237,6 @@ sys.exit(0 if ok else 1)
 EOF
 }
 
-starting "Applying window tiling hotkeys (ctrl+cmd+h/j/k/l)"
 if remap_tiling; then
     killall WindowManager 2>/dev/null || true
     if verify_tiling; then
@@ -248,6 +248,21 @@ else
     failure "window tiling hotkeys could not be written"
 fi
 
+mkdir -p "$HOME/.config/karabiner"
+karabiner_src="$DOTFILES/karabiner/karabiner.json"
+karabiner_dest="$HOME/.config/karabiner/karabiner.json"
+if [ ! -f "$karabiner_dest" ]; then
+    cp "$karabiner_src" "$karabiner_dest" && echo "${_INDENT}🔗 Copied: ${karabiner_dest/#$HOME/~}"
+elif diff -q "$karabiner_src" "$karabiner_dest" &>/dev/null; then
+    success "karabiner config up to date"
+else
+    diff_files "$karabiner_src" "$karabiner_dest" "dotfiles" "~/.config"
+    if ask "Replace ${karabiner_dest/#$HOME/~} with dotfiles version?"; then
+        cp "$karabiner_src" "$karabiner_dest" && success "karabiner config updated"
+    else
+        skipping "karabiner config"
+    fi
+fi
 
 # ======================
 # Work git identity stub
@@ -281,23 +296,6 @@ link_file "$DOTFILES/.tmux.conf"        "$HOME/.tmux.conf"
 link_file "$DOTFILES/.claude/CLAUDE.md"        "$HOME/.claude/CLAUDE.md"
 link_file "$DOTFILES/.claude/hooks"            "$HOME/.claude/hooks"
 link_file "$DOTFILES/.claude/keybindings.json" "$HOME/.claude/keybindings.json"
-
-
-mkdir -p "$HOME/.config/karabiner"
-karabiner_src="$DOTFILES/karabiner/karabiner.json"
-karabiner_dest="$HOME/.config/karabiner/karabiner.json"
-if [ ! -f "$karabiner_dest" ]; then
-    cp "$karabiner_src" "$karabiner_dest" && echo "${_INDENT}🔗 Copied: ${karabiner_dest/#$HOME/~}"
-elif diff -q "$karabiner_src" "$karabiner_dest" &>/dev/null; then
-    success "karabiner config up to date"
-else
-    diff_files "$karabiner_src" "$karabiner_dest" "dotfiles" "~/.config"
-    if ask "Replace ${karabiner_dest/#$HOME/~} with dotfiles version?"; then
-        cp "$karabiner_src" "$karabiner_dest" && success "karabiner config updated"
-    else
-        skipping "karabiner config"
-    fi
-fi
 
 
 # ========
