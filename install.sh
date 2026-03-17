@@ -29,6 +29,10 @@ function warning() {
     echo "${_INDENT}⚠️   ${YELLOW}$1${RESET}"
 }
 
+function complete() {
+    echo "${_INDENT}🏁  ${GREEN}$1${RESET}"
+}
+
 function skipping() {
     echo "${_INDENT}⏭️   Skipping $1"
 }
@@ -272,7 +276,8 @@ fi
 # ========
 
 _INDENT=""
-success "setup complete!"
+echo ""
+complete "setup complete!"
 
 echo ""
 echo "  Open a new terminal (or run 'source ~/.zshrc' in zsh) to apply changes."
