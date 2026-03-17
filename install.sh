@@ -45,12 +45,14 @@ function ask() {
 function link_file() {
     local src="$1"
     local dest="$2"
+    local src_display="${src/#$HOME/~}"
+    local dest_display="${dest/#$HOME/~}"
     if [ -L "$dest" ]; then
-        success "$dest already symlinked"
+        success "$dest_display already symlinked"
     elif [ -e "$dest" ]; then
-        warning "$dest exists but is not a symlink — remove it manually to replace"
+        warning "$dest_display exists but is not a symlink — remove it manually to replace"
     else
-        ln -s "$src" "$dest" && echo "${_INDENT}🔗 Linked: $dest -> $src"
+        ln -s "$src" "$dest" && echo "${_INDENT}🔗 Linked: $dest_display -> $src_display"
     fi
 }
 
@@ -258,12 +260,12 @@ mkdir -p "$HOME/.config/karabiner"
 karabiner_src="$DOTFILES/karabiner/karabiner.json"
 karabiner_dest="$HOME/.config/karabiner/karabiner.json"
 if [ ! -f "$karabiner_dest" ]; then
-    cp "$karabiner_src" "$karabiner_dest" && echo "${_INDENT}🔗 Copied: $karabiner_dest"
+    cp "$karabiner_src" "$karabiner_dest" && echo "${_INDENT}🔗 Copied: ${karabiner_dest/#$HOME/~}"
 elif diff -q "$karabiner_src" "$karabiner_dest" &>/dev/null; then
     success "karabiner config up to date"
 else
     diff "$karabiner_src" "$karabiner_dest"
-    if ask "Replace $karabiner_dest with dotfiles version?"; then
+    if ask "Replace ${karabiner_dest/#$HOME/~} with dotfiles version?"; then
         cp "$karabiner_src" "$karabiner_dest" && success "karabiner config updated"
     else
         skipping "karabiner config"
