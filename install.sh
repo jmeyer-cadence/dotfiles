@@ -157,6 +157,61 @@ else
 fi
 
 
+# ===========================
+# macOS window tiling hotkeys
+# ===========================
+
+HOTKEYS_PLIST="$HOME/Library/Preferences/com.apple.symbolichotkeys.plist"
+
+# Symbolic hotkey IDs for built-in window tiling
+TILE_LEFT_ID=240
+TILE_RIGHT_ID=241
+
+# Key: unicode codepoint, HID keycode
+KEY_H_UNICODE=104; KEY_H_CODE=4
+KEY_L_UNICODE=108; KEY_L_CODE=37
+
+# Modifier flags: ctrl (0x40000) + cmd (0x800000) = 0x840000
+CTRL_CMD_FLAGS=8650752
+
+plist_get() { /usr/libexec/PlistBuddy -c "Print $1" "$HOTKEYS_PLIST" 2>/dev/null; }
+plist_set() { /usr/libexec/PlistBuddy -c "Set $1 $2" "$HOTKEYS_PLIST"; }
+
+remap_tiling() {
+    plist_set ":AppleSymbolicHotKeys:${TILE_LEFT_ID}:value:parameters:0"  "$KEY_H_UNICODE" &&
+    plist_set ":AppleSymbolicHotKeys:${TILE_LEFT_ID}:value:parameters:1"  "$KEY_H_CODE"    &&
+    plist_set ":AppleSymbolicHotKeys:${TILE_LEFT_ID}:value:parameters:2"  "$CTRL_CMD_FLAGS" &&
+    plist_set ":AppleSymbolicHotKeys:${TILE_RIGHT_ID}:value:parameters:0" "$KEY_L_UNICODE" &&
+    plist_set ":AppleSymbolicHotKeys:${TILE_RIGHT_ID}:value:parameters:1" "$KEY_L_CODE"    &&
+    plist_set ":AppleSymbolicHotKeys:${TILE_RIGHT_ID}:value:parameters:2" "$CTRL_CMD_FLAGS"
+}
+
+verify_tiling() {
+    [ "$(plist_get ":AppleSymbolicHotKeys:${TILE_LEFT_ID}:value:parameters:0")"  = "$KEY_H_UNICODE" ] &&
+    [ "$(plist_get ":AppleSymbolicHotKeys:${TILE_LEFT_ID}:value:parameters:1")"  = "$KEY_H_CODE"    ] &&
+    [ "$(plist_get ":AppleSymbolicHotKeys:${TILE_LEFT_ID}:value:parameters:2")"  = "$CTRL_CMD_FLAGS" ] &&
+    [ "$(plist_get ":AppleSymbolicHotKeys:${TILE_RIGHT_ID}:value:parameters:0")" = "$KEY_L_UNICODE" ] &&
+    [ "$(plist_get ":AppleSymbolicHotKeys:${TILE_RIGHT_ID}:value:parameters:1")" = "$KEY_L_CODE"    ] &&
+    [ "$(plist_get ":AppleSymbolicHotKeys:${TILE_RIGHT_ID}:value:parameters:2")" = "$CTRL_CMD_FLAGS" ]
+}
+
+if verify_tiling; then
+    success "window tiling hotkeys already set to ctrl+cmd+h/l"
+else
+    starting "remapping window tiling hotkeys to ctrl+cmd+h/l"
+    if remap_tiling; then
+        /System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u
+        if verify_tiling; then
+            success "window tiling hotkeys updated and verified"
+        else
+            failure "window tiling hotkeys written but verification failed"
+        fi
+    else
+        failure "window tiling hotkeys could not be written"
+    fi
+fi
+
+
 # ======================
 # Work git identity stub
 # ======================
