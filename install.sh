@@ -42,6 +42,18 @@ function ask() {
     [[ "$response" =~ ^[Yy]$ ]]
 }
 
+function diff_files() {
+    local src="$1"
+    local dest="$2"
+    local src_label="${3:-$src}"
+    local dest_label="${4:-$dest}"
+    if [ -x "$(command -v git)" ]; then
+        git diff --no-index --src-prefix="$src_label: " --dst-prefix="$dest_label: " "$src" "$dest"; true
+    else
+        diff "$src" "$dest"
+    fi
+}
+
 function link_file() {
     local src="$1"
     local dest="$2"
@@ -55,6 +67,21 @@ function link_file() {
         ln -s "$src" "$dest" && echo "${_INDENT}🔗 Linked: $dest_display -> $src_display"
     fi
 }
+
+# =======================
+# Xcode Command Line Tools
+# =======================
+
+starting "Xcode Command Line Tools"
+
+if xcode-select -p &>/dev/null; then
+    success "Xcode Command Line Tools already installed"
+elif ask "Xcode Command Line Tools not found. Install it?"; then
+    xcode-select --install
+    success "Xcode Command Line Tools installed"
+else
+    skipping "Xcode Command Line Tools"
+fi
 
 # ====================
 # Package managers
@@ -264,7 +291,7 @@ if [ ! -f "$karabiner_dest" ]; then
 elif diff -q "$karabiner_src" "$karabiner_dest" &>/dev/null; then
     success "karabiner config up to date"
 else
-    git diff --no-index --src-prefix="dotfiles: " --dst-prefix="~/.config: " "$karabiner_src" "$karabiner_dest"; true
+    diff_files "$karabiner_src" "$karabiner_dest" "dotfiles" "~/.config"
     if ask "Replace ${karabiner_dest/#$HOME/~} with dotfiles version?"; then
         cp "$karabiner_src" "$karabiner_dest" && success "karabiner config updated"
     else
