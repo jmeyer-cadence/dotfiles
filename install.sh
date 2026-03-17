@@ -161,38 +161,40 @@ fi
 # macOS window tiling hotkeys
 # ===========================
 
-HOTKEYS_PLIST="$HOME/Library/Preferences/com.apple.symbolichotkeys.plist"
-
-# Symbolic hotkey IDs for built-in window tiling
-TILE_LEFT_ID=240
-TILE_RIGHT_ID=241
-
-# Key: unicode codepoint, HID keycode
-KEY_H_UNICODE=104; KEY_H_CODE=4
-KEY_L_UNICODE=108; KEY_L_CODE=37
-
+# Symbolic hotkey IDs for built-in window tiling (ctrl+cmd+h/l)
+TILE_LEFT_ID=240;   KEY_H_UNICODE=104; KEY_H_CODE=4
+TILE_RIGHT_ID=241;  KEY_L_UNICODE=108; KEY_L_CODE=37
 # Modifier flags: ctrl (0x40000) + cmd (0x100000) = 0x140000
 CTRL_CMD_FLAGS=1310720
 
-plist_get() { /usr/libexec/PlistBuddy -c "Print $1" "$HOTKEYS_PLIST" 2>/dev/null; }
-plist_set() { /usr/libexec/PlistBuddy -c "Set $1 $2" "$HOTKEYS_PLIST"; }
-
+# Write through CFPreferences (not directly to disk) so cfprefsd notifies subscribers
 remap_tiling() {
-    plist_set ":AppleSymbolicHotKeys:${TILE_LEFT_ID}:value:parameters:0"  "$KEY_H_UNICODE" &&
-    plist_set ":AppleSymbolicHotKeys:${TILE_LEFT_ID}:value:parameters:1"  "$KEY_H_CODE"    &&
-    plist_set ":AppleSymbolicHotKeys:${TILE_LEFT_ID}:value:parameters:2"  "$CTRL_CMD_FLAGS" &&
-    plist_set ":AppleSymbolicHotKeys:${TILE_RIGHT_ID}:value:parameters:0" "$KEY_L_UNICODE" &&
-    plist_set ":AppleSymbolicHotKeys:${TILE_RIGHT_ID}:value:parameters:1" "$KEY_L_CODE"    &&
-    plist_set ":AppleSymbolicHotKeys:${TILE_RIGHT_ID}:value:parameters:2" "$CTRL_CMD_FLAGS"
+    python3 <<EOF
+import plistlib, subprocess, sys
+result = subprocess.run(['defaults', 'export', 'com.apple.symbolichotkeys', '-'], capture_output=True)
+prefs = plistlib.loads(result.stdout)
+hotkeys = prefs.setdefault('AppleSymbolicHotKeys', {})
+entry = lambda u, k: {'enabled': True, 'value': {'parameters': [u, k, $CTRL_CMD_FLAGS], 'type': 'standard'}}
+hotkeys['$TILE_LEFT_ID']  = entry($KEY_H_UNICODE, $KEY_H_CODE)
+hotkeys['$TILE_RIGHT_ID'] = entry($KEY_L_UNICODE, $KEY_L_CODE)
+r = subprocess.run(['defaults', 'import', 'com.apple.symbolichotkeys', '-'], input=plistlib.dumps(prefs))
+sys.exit(r.returncode)
+EOF
+    /System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u
 }
 
 verify_tiling() {
-    [ "$(plist_get ":AppleSymbolicHotKeys:${TILE_LEFT_ID}:value:parameters:0")"  = "$KEY_H_UNICODE" ] &&
-    [ "$(plist_get ":AppleSymbolicHotKeys:${TILE_LEFT_ID}:value:parameters:1")"  = "$KEY_H_CODE"    ] &&
-    [ "$(plist_get ":AppleSymbolicHotKeys:${TILE_LEFT_ID}:value:parameters:2")"  = "$CTRL_CMD_FLAGS" ] &&
-    [ "$(plist_get ":AppleSymbolicHotKeys:${TILE_RIGHT_ID}:value:parameters:0")" = "$KEY_L_UNICODE" ] &&
-    [ "$(plist_get ":AppleSymbolicHotKeys:${TILE_RIGHT_ID}:value:parameters:1")" = "$KEY_L_CODE"    ] &&
-    [ "$(plist_get ":AppleSymbolicHotKeys:${TILE_RIGHT_ID}:value:parameters:2")" = "$CTRL_CMD_FLAGS" ]
+    python3 <<EOF
+import plistlib, subprocess, sys
+result = subprocess.run(['defaults', 'export', 'com.apple.symbolichotkeys', '-'], capture_output=True)
+prefs = plistlib.loads(result.stdout)
+hotkeys = prefs.get('AppleSymbolicHotKeys', {})
+def check(id_, unicode_, code):
+    params = hotkeys.get(str(id_), {}).get('value', {}).get('parameters', [])
+    return params == [unicode_, code, $CTRL_CMD_FLAGS]
+ok = check($TILE_LEFT_ID, $KEY_H_UNICODE, $KEY_H_CODE) and check($TILE_RIGHT_ID, $KEY_L_UNICODE, $KEY_L_CODE)
+sys.exit(0 if ok else 1)
+EOF
 }
 
 if verify_tiling; then
@@ -200,7 +202,6 @@ if verify_tiling; then
 else
     starting "remapping window tiling hotkeys to ctrl+cmd+h/l"
     if remap_tiling; then
-        killall WindowManager 2>/dev/null || true
         if verify_tiling; then
             success "window tiling hotkeys updated and verified"
         else
