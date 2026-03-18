@@ -208,8 +208,11 @@ TILE_LEFT_ID=240;   KEY_H_UNICODE=104; KEY_H_CODE=4
 TILE_RIGHT_ID=241;  KEY_L_UNICODE=108; KEY_L_CODE=37
 TILE_FILL_ID=237;   KEY_K_UNICODE=107; KEY_K_CODE=40
 TILE_CENTER_ID=238; KEY_J_UNICODE=106; KEY_J_CODE=38
+ARRANGE_LR_ID=248; ARRANGE_RL_ID=249
 # Modifier flags: ctrl (0x40000) + cmd (0x100000) = 0x140000
 CTRL_CMD_FLAGS=1310720
+# Modifier flags: ctrl (0x40000) + shift (0x20000) + cmd (0x100000) = 0x160000
+CTRL_SHIFT_CMD_FLAGS=1441792
 
 # Write through CFPreferences (not directly to disk) so cfprefsd notifies subscribers
 remap_tiling() {
@@ -223,6 +226,9 @@ hotkeys['$TILE_LEFT_ID']   = entry($KEY_H_UNICODE, $KEY_H_CODE)
 hotkeys['$TILE_RIGHT_ID']  = entry($KEY_L_UNICODE, $KEY_L_CODE)
 hotkeys['$TILE_FILL_ID']   = entry($KEY_K_UNICODE, $KEY_K_CODE)
 hotkeys['$TILE_CENTER_ID'] = entry($KEY_J_UNICODE, $KEY_J_CODE)
+entry2 = lambda u, k: {'enabled': True, 'value': {'parameters': [u, k, $CTRL_SHIFT_CMD_FLAGS], 'type': 'standard'}}
+hotkeys['$ARRANGE_LR_ID'] = entry2($KEY_H_UNICODE, $KEY_H_CODE)
+hotkeys['$ARRANGE_RL_ID'] = entry2($KEY_L_UNICODE, $KEY_L_CODE)
 r = subprocess.run(['defaults', 'import', 'com.apple.symbolichotkeys', '-'], input=plistlib.dumps(prefs))
 sys.exit(r.returncode)
 EOF
@@ -235,13 +241,15 @@ import plistlib, subprocess, sys
 result = subprocess.run(['defaults', 'export', 'com.apple.symbolichotkeys', '-'], capture_output=True)
 prefs = plistlib.loads(result.stdout)
 hotkeys = prefs.get('AppleSymbolicHotKeys', {})
-def check(id_, unicode_, code):
+def check(id_, unicode_, code, flags=$CTRL_CMD_FLAGS):
     params = hotkeys.get(str(id_), {}).get('value', {}).get('parameters', [])
-    return params == [unicode_, code, $CTRL_CMD_FLAGS]
+    return params == [unicode_, code, flags]
 ok = (check($TILE_LEFT_ID,   $KEY_H_UNICODE, $KEY_H_CODE) and
      check($TILE_RIGHT_ID,  $KEY_L_UNICODE, $KEY_L_CODE) and
      check($TILE_FILL_ID,   $KEY_K_UNICODE, $KEY_K_CODE) and
-     check($TILE_CENTER_ID, $KEY_J_UNICODE, $KEY_J_CODE))
+     check($TILE_CENTER_ID, $KEY_J_UNICODE, $KEY_J_CODE) and
+     check($ARRANGE_LR_ID, $KEY_H_UNICODE, $KEY_H_CODE, $CTRL_SHIFT_CMD_FLAGS) and
+     check($ARRANGE_RL_ID, $KEY_L_UNICODE, $KEY_L_CODE, $CTRL_SHIFT_CMD_FLAGS))
 sys.exit(0 if ok else 1)
 EOF
 }
