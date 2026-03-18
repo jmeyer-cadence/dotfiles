@@ -141,6 +141,15 @@ else
     skipping "tmux"
 fi
 
+if [ -d "$HOME/.tmux/plugins/tpm" ]; then
+    success "tpm (tmux plugin manager) already installed"
+elif ask "tpm not found. Install it?"; then
+    git clone https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
+    success "tpm installed"
+else
+    skipping "tpm"
+fi
+
 if [ -x "$(command -v workmux)" ]; then
     success "workmux already installed"
 elif ask "workmux not found. Install it?"; then
@@ -297,6 +306,19 @@ link_file "$DOTFILES/.claude/CLAUDE.md"        "$HOME/.claude/CLAUDE.md"
 link_file "$DOTFILES/.claude/hooks"            "$HOME/.claude/hooks"
 link_file "$DOTFILES/.claude/keybindings.json" "$HOME/.claude/keybindings.json"
 
+# ================
+# tmux plugins
+# ================
+
+starting "tmux plugins"
+
+if [ -f "$HOME/.tmux/plugins/tpm/bin/install_plugins" ]; then
+    "$HOME/.tmux/plugins/tpm/bin/install_plugins" &>/dev/null \
+        && success "tmux plugins installed" \
+        || warning "tmux plugin install failed — run 'prefix + I' inside tmux to retry"
+else
+    skipping "tmux plugins (tpm not installed)"
+fi
 
 # ========
 # Complete
