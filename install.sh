@@ -314,7 +314,7 @@ starting "tmux plugins"
 
 if [ -f "$HOME/.tmux/plugins/tpm/bin/install_plugins" ]; then
     tmux start-server \; set-environment -g TMUX_PLUGIN_MANAGER_PATH "$HOME/.tmux/plugins/"
-    "$HOME/.tmux/plugins/tpm/bin/install_plugins" \
+    "$HOME/.tmux/plugins/tpm/bin/install_plugins" &>/dev/null \
         && success "tmux plugins installed" \
         || warning "tmux plugin install failed — run 'prefix + I' inside tmux to retry"
 else
