@@ -313,15 +313,10 @@ link_file "$DOTFILES/.claude/keybindings.json" "$HOME/.claude/keybindings.json"
 starting "tmux plugins"
 
 if [ -f "$HOME/.tmux/plugins/tpm/bin/install_plugins" ]; then
-    tmux -L _tpm_install new-session -d
-    "$HOME/.tmux/plugins/tpm/bin/install_plugins" 2>&1
-    _tpm_exit=$?
-    tmux -L _tpm_install kill-server 2>/dev/null || true
-    if [ $_tpm_exit -eq 0 ]; then
-        success "tmux plugins installed"
-    else
-        warning "tmux plugin install failed (exit $_tpm_exit) — run 'prefix + I' inside tmux to retry"
-    fi
+    tmux start-server \; set-environment -g TMUX_PLUGIN_MANAGER_PATH "$HOME/.tmux/plugins/"
+    "$HOME/.tmux/plugins/tpm/bin/install_plugins" \
+        && success "tmux plugins installed" \
+        || warning "tmux plugin install failed — run 'prefix + I' inside tmux to retry"
 else
     skipping "tmux plugins (tpm not installed)"
 fi
