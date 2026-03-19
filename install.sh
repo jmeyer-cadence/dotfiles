@@ -54,13 +54,35 @@ function diff_files() {
     fi
 }
 
+function canonical_path() {
+    python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$1"
+}
+
 function link_file() {
     local src="$1"
     local dest="$2"
     local src_display="${src/#$HOME/~}"
     local dest_display="${dest/#$HOME/~}"
+    local src_canonical
+    local dest_canonical
+    local current_link
+
+    mkdir -p "$(dirname "$dest")"
+    src_canonical="$(canonical_path "$src")"
+
     if [ -L "$dest" ]; then
-        success "$dest_display already symlinked"
+        dest_canonical="$(canonical_path "$dest")"
+        if [ "$src_canonical" = "$dest_canonical" ]; then
+            success "$dest_display already symlinked"
+        else
+            current_link="$(readlink "$dest")"
+            warning "$dest_display points to ${current_link/#$HOME/~}"
+            if ask "Replace the symlink for $dest_display?"; then
+                rm "$dest" && ln -s "$src" "$dest" && success "updated symlink for $dest_display"
+            else
+                skipping "$dest_display"
+            fi
+        fi
     elif [ -e "$dest" ]; then
         warning "$dest_display exists but is not a symlink — remove it manually to replace"
     else
@@ -298,6 +320,25 @@ EOF
     warning "Created stub ~/.gitconfig-work — update it with your work identity"
 fi
 
+# ========================
+# Work shell settings stub
+# ========================
+
+starting "Work shell settings"
+
+if [ -f "$HOME/.zshrc.work" ]; then
+    success "~/.zshrc.work already exists"
+else
+    cat > "$HOME/.zshrc.work" <<'EOF'
+# Work-specific shell settings. Safe to edit locally.
+
+if [ -f "$HOME/.zsh-autoenv/autoenv.zsh" ]; then
+    source "$HOME/.zsh-autoenv/autoenv.zsh"
+fi
+EOF
+    warning "Created stub ~/.zshrc.work — add work-only shell settings here"
+fi
+
 # =============
 # Link dotfiles
 # =============
@@ -313,6 +354,7 @@ link_file "$DOTFILES/.tmux.conf"        "$HOME/.tmux.conf"
 link_file "$DOTFILES/.claude/CLAUDE.md"        "$HOME/.claude/CLAUDE.md"
 link_file "$DOTFILES/.claude/hooks"            "$HOME/.claude/hooks"
 link_file "$DOTFILES/.claude/keybindings.json" "$HOME/.claude/keybindings.json"
+link_file "$DOTFILES/.claude/settings.json"    "$HOME/.claude/settings.json"
 
 # ================
 # tmux plugins

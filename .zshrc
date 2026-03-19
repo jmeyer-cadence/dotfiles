@@ -4,6 +4,19 @@ dotfiles=$HOME/dotfiles
 # Future idea. All subdirs could include a "sourceme" file with instructions on
 # what to source in their subdirs.
 
+# ===========
+# Homebrew
+# ===========
+
+if [ -x /opt/homebrew/bin/brew ]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [ -x /usr/local/bin/brew ]; then
+    eval "$(/usr/local/bin/brew shellenv)"
+fi
+
+# Keep the path array de-duplicated; zsh keeps PATH and path in sync.
+typeset -U path PATH
+
 # =====================
 # Environment Variables
 # =====================
@@ -13,11 +26,11 @@ export PS1="$ "
 
 # Go (brew installs `go` to /opt/homebrew/bin via shellenv above)
 export GOPATH="$HOME/go"
-export PATH="$PATH:$GOPATH/bin"
+path+=("$GOPATH/bin")
 
 
 # Editors
-export PATH="/usr/local/bin/idea:$PATH"
+path=("/usr/local/bin/idea" $path)
 export EDITOR=vim
 
 # =====================
@@ -65,45 +78,58 @@ bindkey "^R" history-incremental-search-backward
 # Alias handling
 # ==============
 
-source $dotfiles/bash/aliases.sh
+source "$dotfiles/bash/aliases.sh"
 
 # =====
 # MySQL
 # =====
 
-export PATH="/usr/local/opt/mysql-client/bin:$PATH"
+path=("/usr/local/opt/mysql-client/bin" $path)
 
 # ==========
 # PostgreSQL
 # ==========
 
-export PATH="/opt/homebrew/opt/postgresql@18/bin:$PATH"
+path=("/opt/homebrew/opt/postgresql@18/bin" $path)
 
 # ======
 # Python
 # ======
 
-export PATH="~/Library/Python/3.6/bin:$PATH"
+path+=("$HOME/Library/Python/3.6/bin")
 export PYTHONSTARTUP="$dotfiles/.pyrc"
 
-eval "$(pyenv init - zsh)"
+if command -v pyenv >/dev/null 2>&1; then
+    eval "$(pyenv init - --no-rehash zsh)"
+fi
 #eval "$(pyenv virtualenv-init -)"  # this was slowing down the shell
-			            # see https://github.com/pyenv/pyenv-virtualenv/issues/132
-				    # for debug steps
-
-# ===========
-# Homebrew
-# ===========
-eval "$(/opt/homebrew/bin/brew shellenv)"
+                                # see https://github.com/pyenv/pyenv-virtualenv/issues/132
+                            # for debug steps
 
 # ================
 # Use coreutils
 # (i.e. gls -> ls)
 # ================
-export PATH=/opt/homebrew/opt/coreutils/libexec/gnubin:$PATH
+if [ -d /opt/homebrew/opt/coreutils/libexec/gnubin ]; then
+    path=(/opt/homebrew/opt/coreutils/libexec/gnubin $path)
+fi
+
+# =====================
+# Enable zsh completion
+# =====================
+
+autoload -Uz compinit
+compinit
 
 # =========
 # Misc
 # =========
-export PATH="$HOME/.local/bin:$PATH"
-source ~/.zsh-autoenv/autoenv.zsh
+path=("$HOME/.local/bin" $path)
+export PATH
+
+if [ -f "$HOME/.zshrc.work" ]; then
+    source "$HOME/.zshrc.work"
+elif [ -f "$HOME/.zsh-autoenv/autoenv.zsh" ]; then
+    # Backward-compatible fallback until work-only shell settings live in ~/.zshrc.work.
+    source "$HOME/.zsh-autoenv/autoenv.zsh"
+fi

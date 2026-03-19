@@ -36,15 +36,46 @@ alias gcom="git commit -m"
 alias gam="git commit --amend"
 alias gamne="git commit --amend --no-edit"
 alias gpfwl="git push --force-with-lease"
-alias gpomr="git pull origin master --rebase"
 alias gd="git diff"
 alias gdl="git show"
 alias gst="git status"
 alias gstl="git show --name-status HEAD"
 alias ghi="git log --graph --abbrev-commit --branches --remotes --tags --graph --oneline --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(bold yellow)%d%C(reset)'"
-alias gprune="git remote prune origin && git branch --merged master | grep -v '^[ *]*master$' | xargs git branch -d"
 alias gtempignore="git update-index --assume-unchanged"
 alias gtempunignore="git update-index --no-assume-unchanged"
+
+git_default_branch() {
+    local origin_head
+
+    origin_head="$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null)"
+    if [ -n "$origin_head" ]; then
+        printf '%s\n' "${origin_head#origin/}"
+    elif git show-ref --verify --quiet refs/remotes/origin/main; then
+        printf 'main\n'
+    elif git show-ref --verify --quiet refs/remotes/origin/master; then
+        printf 'master\n'
+    else
+        printf 'main\n'
+    fi
+}
+
+git_pull_origin_default_rebase() {
+    git pull origin "$(git_default_branch)" --rebase
+}
+alias gpomr=git_pull_origin_default_rebase
+
+git_prune_merged_default() {
+    local default_branch
+
+    default_branch="$(git_default_branch)"
+    git remote prune origin || return 1
+    git branch --merged "origin/$default_branch" |
+        grep -Ev '(^\*|^[[:space:]]*(main|master|dev)$)' |
+        while read -r branch; do
+            git branch -d "${branch##* }"
+        done
+}
+alias gprune=git_prune_merged_default
 
 # Worktrees — siblings to the current worktree's parent (bare repo layout)
 git_worktree_add() {

@@ -1,6 +1,2 @@
-# =======
-# General
-# =======
-
-alias src='source $HOME/.bash_profile'
-alias bp='$EDITOR $HOME/.bash_profile'
+# Backward-compatible shim: keep a single aliases source of truth in bash/aliases.sh.
+source "$HOME/dotfiles/bash/aliases.sh"
