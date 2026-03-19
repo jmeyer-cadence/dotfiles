@@ -2,7 +2,7 @@
 	name = justian-meyer
 	email = meyer.justian@gmail.com
 [includeIf "gitdir:~/Projects/"]
-	path = ~/.gitconfig-work
+	path = ~/.gitconfig.work
 [core]
 	excludesfile = ~/.gitignore_global
 [alias]

@@ -303,40 +303,48 @@ else
     fi
 fi
 
-# ======================
-# Work git identity stub
-# ======================
+# =======================
+# Machine-local overrides
+# =======================
+#
+# These files are not versioned. Each machine sets them independently.
+# Naming convention: *.work for all local override files.
+#   ~/.gitconfig.work    — included by .gitconfig for ~/Projects/ repos
+#   ~/.zshrc.work        — sourced by .zshrc if present
+#   bash/aliases.work.sh — sourced by aliases.sh if present
 
-starting "Work git identity"
+starting "Machine-local overrides"
 
-if [ -f "$HOME/.gitconfig-work" ]; then
-    success "~/.gitconfig-work already exists"
+# Migrate old ~/.gitconfig-work to ~/.gitconfig.work
+if [ -f "$HOME/.gitconfig-work" ] && [ ! -f "$HOME/.gitconfig.work" ]; then
+    mv "$HOME/.gitconfig-work" "$HOME/.gitconfig.work"
+    success "Migrated ~/.gitconfig-work → ~/.gitconfig.work"
+fi
+
+if [ -f "$HOME/.gitconfig.work" ]; then
+    success "~/.gitconfig.work already exists"
 else
-    cat > "$HOME/.gitconfig-work" <<'EOF'
+    cat > "$HOME/.gitconfig.work" <<'EOF'
 [user]
 	name = your-work-name
 	email = your-work-email@example.com
 EOF
-    warning "Created stub ~/.gitconfig-work — update it with your work identity"
+    warning "Created stub ~/.gitconfig.work — update with your work git identity"
 fi
-
-# ========================
-# Work shell settings stub
-# ========================
-
-starting "Work shell settings"
 
 if [ -f "$HOME/.zshrc.work" ]; then
     success "~/.zshrc.work already exists"
 else
     cat > "$HOME/.zshrc.work" <<'EOF'
-# Work-specific shell settings. Safe to edit locally.
-
-if [ -f "$HOME/.zsh-autoenv/autoenv.zsh" ]; then
-    source "$HOME/.zsh-autoenv/autoenv.zsh"
-fi
+# Machine-local shell settings (not version controlled).
 EOF
-    warning "Created stub ~/.zshrc.work — add work-only shell settings here"
+    warning "Created stub ~/.zshrc.work — add machine-local shell settings here"
+fi
+
+if [ -f "$DOTFILES/bash/aliases.work.sh" ]; then
+    success "bash/aliases.work.sh already exists"
+else
+    skipping "bash/aliases.work.sh (create it manually for machine-local aliases)"
 fi
 
 # =============
