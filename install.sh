@@ -315,12 +315,6 @@ fi
 
 starting "Machine-local overrides"
 
-# Migrate old ~/.gitconfig-work to ~/.gitconfig.work
-if [ -f "$HOME/.gitconfig-work" ] && [ ! -f "$HOME/.gitconfig.work" ]; then
-    mv "$HOME/.gitconfig-work" "$HOME/.gitconfig.work"
-    success "Migrated ~/.gitconfig-work → ~/.gitconfig.work"
-fi
-
 if [ -f "$HOME/.gitconfig.work" ]; then
     success "~/.gitconfig.work already exists"
 else
