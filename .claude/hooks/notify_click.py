@@ -2,8 +2,27 @@
 """Restore the relevant iTerm/tmux context when a notification is clicked."""
 
 import argparse
+import os
+import shutil
 import subprocess
 from typing import Optional
+
+
+def resolve_command(command: str, fallbacks: list[str]) -> str:
+    """Resolve a command from PATH or a list of known install locations."""
+    resolved = shutil.which(command)
+    if resolved:
+        return resolved
+
+    for candidate in fallbacks:
+        if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            return candidate
+
+    return command
+
+
+OSASCRIPT = resolve_command("osascript", ["/usr/bin/osascript"])
+TMUX = resolve_command("tmux", ["/opt/homebrew/bin/tmux", "/usr/local/bin/tmux"])
 
 
 def run(args: list[str]) -> subprocess.CompletedProcess:
@@ -16,13 +35,13 @@ def focus_iterm_session(session_uuid: Optional[str]) -> None:
     if session_uuid:
         script = f"""
 tell application "iTerm2"
-    activate
     repeat with w in windows
         repeat with t in tabs of w
             repeat with s in sessions of t
                 if unique ID of s is "{session_uuid}" then
-                    set current window to w
-                    set current tab of w to t
+                    tell w to select
+                    tell t to select
+                    tell s to select
                     return "focused"
                 end if
             end repeat
@@ -30,16 +49,16 @@ tell application "iTerm2"
     end repeat
 end tell
 """
-        result = run(["osascript", "-e", script])
+        result = run([OSASCRIPT, "-e", script])
         if result.returncode == 0 and result.stdout.strip() == "focused":
             return
 
-    run(["osascript", "-e", 'tell application "iTerm2" to activate'])
+    run([OSASCRIPT, "-e", 'tell application "iTerm2" to activate'])
 
 
 def tmux_value(target: str, fmt: str) -> Optional[str]:
     """Return a tmux format value for the given target."""
-    result = run(["tmux", "display-message", "-p", "-t", target, fmt])
+    result = run([TMUX, "display-message", "-p", "-t", target, fmt])
     if result.returncode != 0:
         return None
 
@@ -52,7 +71,7 @@ def first_client_for_session(session_name: Optional[str]) -> Optional[str]:
     if not session_name:
         return None
 
-    result = run(["tmux", "list-clients", "-F", "#{client_tty}\t#{session_name}"])
+    result = run([TMUX, "list-clients", "-F", "#{client_tty}\t#{session_name}"])
     if result.returncode != 0:
         return None
 
@@ -65,16 +84,52 @@ def first_client_for_session(session_name: Optional[str]) -> Optional[str]:
     return None
 
 
+def client_exists(client_tty: Optional[str]) -> bool:
+    """Return True when tmux recognizes the given client tty."""
+    if not client_tty:
+        return False
+
+    result = run([TMUX, "list-clients", "-F", "#{client_tty}"])
+    if result.returncode != 0:
+        return False
+
+    return client_tty in result.stdout.splitlines()
+
+
+def session_name_for_target(target: Optional[str]) -> Optional[str]:
+    """Resolve the tmux session name that owns the given target."""
+    if not target:
+        return None
+    return tmux_value(target, "#{session_name}")
+
+
+def window_id_for_target(target: Optional[str]) -> Optional[str]:
+    """Resolve the tmux window id that owns the given target."""
+    if not target:
+        return None
+    return tmux_value(target, "#{window_id}")
+
+
 def target_exists(target: Optional[str]) -> bool:
     """Return True when tmux recognizes the given target."""
     if not target:
         return False
-    return run(["tmux", "display-message", "-p", "-t", target, "#{session_name}"]).returncode == 0
+    return run([TMUX, "display-message", "-p", "-t", target, "#{session_name}"]).returncode == 0
 
 
 def switch_tmux_client(client_tty: str, target: str) -> bool:
     """Switch a tmux client to the target pane/window/session."""
-    return run(["tmux", "switch-client", "-c", client_tty, "-t", target]).returncode == 0
+    return run([TMUX, "switch-client", "-c", client_tty, "-t", target]).returncode == 0
+
+
+def select_tmux_window(target: str) -> bool:
+    """Select the target window within the current tmux session."""
+    return run([TMUX, "select-window", "-t", target]).returncode == 0
+
+
+def select_tmux_pane(target: str) -> bool:
+    """Select the target pane within the current tmux window."""
+    return run([TMUX, "select-pane", "-t", target]).returncode == 0
 
 
 def focus_tmux_target(
@@ -83,7 +138,7 @@ def focus_tmux_target(
     session_name: Optional[str],
     client_tty: Optional[str],
 ) -> None:
-    """Restore the tmux client to the most specific available target."""
+    """Restore the tmux client to the saved session, window, and pane."""
     target = None
     if target_exists(pane_id):
         target = pane_id
@@ -95,11 +150,21 @@ def focus_tmux_target(
     if not target:
         return
 
-    target_client = client_tty or first_client_for_session(session_name)
-    if not target_client:
+    target_session = session_name or session_name_for_target(target)
+    target_window = window_id or window_id_for_target(target)
+    target_client = client_tty if client_exists(client_tty) else first_client_for_session(target_session)
+    if not target_client or not target_session:
         return
 
-    switch_tmux_client(target_client, target)
+    if pane_id and target_exists(pane_id):
+        if switch_tmux_client(target_client, pane_id):
+            return
+
+    if not switch_tmux_client(target_client, target_session):
+        return
+
+    if target_window and target_exists(target_window):
+        select_tmux_window(target_window)
 
 
 def parse_args() -> argparse.Namespace:

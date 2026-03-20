@@ -20,7 +20,8 @@ from typing import Optional
 
 
 OTHER_FRONTMOST_APP = "__OTHER_FRONTMOST_APP__"
-CLICK_HANDLER = os.path.join(os.path.dirname(__file__), "notify_click.py")
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+CLICK_HANDLER = os.path.join(SCRIPT_DIR, "notify_click.py")
 TERMINAL_NOTIFIER = shutil.which("terminal-notifier")
 
 
@@ -204,8 +205,16 @@ def terminal_notify(title: str, message: str, sound: str, context: dict[str, str
     if command:
         args.extend(["-execute", command])
 
-    result = subprocess.run(args)
-    return result.returncode == 0
+    result = subprocess.run(args, capture_output=True, text=True)
+    if result.returncode != 0 and result.stderr.strip():
+        print(
+            f"terminal-notifier exited with {result.returncode}: {result.stderr.strip()}",
+            file=sys.stderr,
+        )
+
+    # Avoid double notifications. When terminal-notifier is installed, it is the
+    # authoritative delivery path even if it returns a non-zero status.
+    return True
 
 
 def notify(title: str, message: str, sound: str = "Glass") -> None:
