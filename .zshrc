@@ -133,6 +133,12 @@ export PATH
 
 if command -v workmux >/dev/null 2>&1; then
     eval "$(workmux completions zsh)"
+
+    _workmux_handles() {
+        local -a handles
+        handles=(${${(f)"$(git worktree list --porcelain 2>/dev/null | awk '/^worktree/{print $2}')"}[2,-1]:t})
+        compadd -a handles
+    }
 fi
 
 if [ -f "$HOME/.zshrc.work" ]; then
