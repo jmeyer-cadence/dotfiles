@@ -2,20 +2,26 @@
 """Claude Code desktop notification hook.
 
 Works for both Notification and Stop hook events.
-Uses osascript to fire macOS notifications when Claude is not running in the
-active iTerm2 context. Inside tmux, that means the active pane in the active
-window; background panes in the focused tab should still notify.
+Prefers terminal-notifier for richer click actions when available and falls
+back to AppleScript notifications otherwise. Notifications only fire when
+Claude is not running in the active iTerm2 context. Inside tmux, that means
+the active pane in the active window; background panes in the focused tab
+should still notify.
 """
 
 import json
 import os
 import re
+import shlex
+import shutil
 import subprocess
 import sys
 from typing import Optional
 
 
 OTHER_FRONTMOST_APP = "__OTHER_FRONTMOST_APP__"
+CLICK_HANDLER = os.path.join(os.path.dirname(__file__), "notify_click.py")
+TERMINAL_NOTIFIER = shutil.which("terminal-notifier")
 
 
 def current_iterm_session_uuid() -> Optional[str]:
@@ -111,16 +117,105 @@ def is_active_context() -> bool:
     return tmux_active
 
 
-def notify(title: str, message: str, sound: str = "Glass") -> None:
-    if is_active_context():
-        return
+def run(args: list[str]) -> subprocess.CompletedProcess:
+    """Run a subprocess with captured text output."""
+    return subprocess.run(args, capture_output=True, text=True)
 
+
+def tmux_value(target: str, fmt: str) -> Optional[str]:
+    """Return a tmux format value for the given target."""
+    result = run(["tmux", "display-message", "-p", "-t", target, fmt])
+    if result.returncode != 0:
+        return None
+
+    value = result.stdout.strip()
+    return value if value else None
+
+
+def notification_context() -> dict[str, str]:
+    """Return the context needed to restore iTerm/tmux on notification click."""
+    context: dict[str, str] = {}
+
+    iterm_session = current_iterm_session_uuid()
+    if iterm_session:
+        context["iterm_session"] = iterm_session
+
+    tmux_pane = os.environ.get("TMUX_PANE")
+    if not tmux_pane:
+        return context
+
+    context["pane_id"] = tmux_pane
+
+    client_tty = tmux_value(tmux_pane, "#{client_tty}")
+    if client_tty:
+        context["client_tty"] = client_tty
+
+    window_id = tmux_value(tmux_pane, "#{window_id}")
+    if window_id:
+        context["window_id"] = window_id
+
+    session_name = tmux_value(tmux_pane, "#{session_name}")
+    if session_name:
+        context["session_name"] = session_name
+
+    return context
+
+
+def click_command(context: dict[str, str]) -> Optional[str]:
+    """Build the click handler command for terminal-notifier."""
+    if not os.path.isfile(CLICK_HANDLER):
+        return None
+
+    command = [CLICK_HANDLER]
+    for key in ("iterm_session", "client_tty", "session_name", "window_id", "pane_id"):
+        value = context.get(key)
+        if value:
+            command.extend([f"--{key.replace('_', '-')}", value])
+
+    return " ".join(shlex.quote(part) for part in command)
+
+
+def native_notify(title: str, message: str, sound: str) -> None:
+    """Send a native AppleScript notification."""
     script = (
         f"display notification {json.dumps(message)} "
         f"with title {json.dumps(title)} "
         f'sound name "{sound}"'
     )
     subprocess.run(["osascript", "-e", script])
+
+
+def terminal_notify(title: str, message: str, sound: str, context: dict[str, str]) -> bool:
+    """Send a terminal-notifier notification if available."""
+    if not TERMINAL_NOTIFIER:
+        return False
+
+    args = [
+        TERMINAL_NOTIFIER,
+        "-title",
+        title,
+        "-message",
+        message,
+        "-sound",
+        sound,
+    ]
+
+    command = click_command(context)
+    if command:
+        args.extend(["-execute", command])
+
+    result = subprocess.run(args)
+    return result.returncode == 0
+
+
+def notify(title: str, message: str, sound: str = "Glass") -> None:
+    if is_active_context():
+        return
+
+    context = notification_context()
+    if terminal_notify(title, message, sound, context):
+        return
+    native_notify(title, message, sound)
 
 
 def main() -> None:

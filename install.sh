@@ -190,6 +190,15 @@ else
     skipping "difit"
 fi
 
+if [ -x "$(command -v terminal-notifier)" ]; then
+    success "terminal-notifier already installed"
+elif ask "terminal-notifier not found. Install it? (optional: Claude hooks use it for clickable notifications that can reopen iTerm and restore the relevant tmux context; without it, notifications fall back to the native macOS banner with no custom click action)"; then
+    brew install terminal-notifier
+    success "terminal-notifier installed"
+else
+    skipping "terminal-notifier"
+fi
+
 if [ -x "$(command -v go)" ]; then
     success "go already installed"
 elif ask "go not found. Install it?"; then
