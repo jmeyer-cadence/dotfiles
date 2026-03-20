@@ -127,6 +127,14 @@ compinit
 path=("$HOME/.local/bin" $path)
 export PATH
 
+# ================
+# Shell completions
+# ================
+
+if command -v workmux >/dev/null 2>&1; then
+    eval "$(workmux completions zsh)"
+fi
+
 if [ -f "$HOME/.zshrc.work" ]; then
     source "$HOME/.zshrc.work"
 elif [ -f "$HOME/.zsh-autoenv/autoenv.zsh" ]; then
