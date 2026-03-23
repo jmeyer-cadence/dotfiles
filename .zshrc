@@ -146,4 +146,14 @@ if [ -f "$HOME/.zshrc.work" ]; then
 elif [ -f "$HOME/.zsh-autoenv/autoenv.zsh" ]; then
     # Backward-compatible fallback until work-only shell settings live in ~/.zshrc.work.
     source "$HOME/.zsh-autoenv/autoenv.zsh"
+    # Auto-accept env files only inside trusted project directories.
+    _autoenv_trust_check() {
+        if [[ $PWD == $HOME/Projects/* ]]; then
+            AUTOENV_ASSUME_YES=1
+        else
+            unset AUTOENV_ASSUME_YES
+        fi
+    }
+    chpwd_functions+=(_autoenv_trust_check)
+    _autoenv_trust_check
 fi
