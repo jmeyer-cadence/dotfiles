@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Invoked by tmux-resurrect to restore a Claude session in this pane.
+# Falls back with a message if no saved session is found.
+RESURRECT_MAP="${HOME}/.claude/resurrect_sessions.json"
+
+if [[ -n "${TMUX_PANE:-}" && -f "$RESURRECT_MAP" ]]; then
+    STABLE_ID=$(tmux display-message -p -t "$TMUX_PANE" \
+        "#{session_name}:#{window_index}:#{pane_index}" 2>/dev/null)
+    if [[ -n "$STABLE_ID" ]]; then
+        SESSION_ID=$(RESURRECT_MAP="$RESURRECT_MAP" STABLE_ID="$STABLE_ID" python3 -c "
+import json, os
+try:
+    d = json.load(open(os.environ['RESURRECT_MAP']))
+    print(d.get(os.environ['STABLE_ID'], ''))
+except Exception:
+    pass
+" 2>/dev/null)
+        if [[ -n "$SESSION_ID" ]]; then
+            exec claude --resume "$SESSION_ID" "$@"
+        fi
+    fi
+fi
+
+echo "Unable to recover Claude session. Try 'claude --resume' to pick from a list of sessions, or 'claude --continue' to reopen the most recent session in this directory."
