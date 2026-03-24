@@ -7,6 +7,10 @@ alias zc="$EDITOR ~/.zshrc"
 
 alias df="cd $HOME/dotfiles"
 
+dfwork() {
+  cd "$HOME/dotfiles" && tmux new-session -A -s dfwork
+}
+
 # =======
 # General
 # =======
