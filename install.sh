@@ -208,6 +208,15 @@ else
     skipping "go"
 fi
 
+if [ -x "$(command -v gcloud)" ]; then
+    success "gcloud already installed"
+elif ask "gcloud not found. Install it?"; then
+    brew install --cask gcloud-cli
+    success "gcloud installed"
+else
+    skipping "gcloud"
+fi
+
 if brew list postgresql@18 &>/dev/null; then
     success "postgresql already installed"
 elif ask "postgresql not found. Install it? (provides psql)"; then
