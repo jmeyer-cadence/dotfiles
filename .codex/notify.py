@@ -18,6 +18,8 @@ from typing import Optional
 
 OTHER_FRONTMOST_APP = "__OTHER_FRONTMOST_APP__"
 TERMINAL_NOTIFIER = shutil.which("terminal-notifier")
+ITERM_BUNDLE_ID = "com.googlecode.iterm2"
+NOTIFICATION_TIMEOUT_SECONDS = 5
 
 
 def current_iterm_session_uuid() -> Optional[str]:
@@ -42,7 +44,15 @@ tell application "iTerm2"
     end try
 end tell
 """
-    result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+    try:
+        result = subprocess.run(
+            ["osascript", "-e", script],
+            capture_output=True,
+            text=True,
+            timeout=NOTIFICATION_TIMEOUT_SECONDS,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
     if result.returncode != 0:
         return None
 
@@ -59,33 +69,37 @@ def is_active_iterm_tab() -> bool:
     if active_uuid == OTHER_FRONTMOST_APP:
         return False
     if not active_uuid or not our_uuid:
-        return True
+        return False
     return active_uuid == our_uuid
 
 
-def is_active_tmux_context() -> Optional[bool]:
+def is_active_tmux_context() -> bool:
     tmux_pane = os.environ.get("TMUX_PANE")
     if not tmux_pane:
-        return None
+        return True
 
-    result = subprocess.run(
-        [
-            "tmux",
-            "display-message",
-            "-p",
-            "-t",
-            tmux_pane,
-            "#{session_attached}\t#{window_active}\t#{pane_active}",
-        ],
-        capture_output=True,
-        text=True,
-    )
+    try:
+        result = subprocess.run(
+            [
+                "tmux",
+                "display-message",
+                "-p",
+                "-t",
+                tmux_pane,
+                "#{session_attached}\t#{window_active}\t#{pane_active}",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=NOTIFICATION_TIMEOUT_SECONDS,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
     if result.returncode != 0:
-        return None
+        return False
 
     parts = result.stdout.strip().split("\t")
     if len(parts) != 3:
-        return None
+        return False
 
     session_attached, window_active, pane_active = parts
     if session_attached == "0":
@@ -94,13 +108,8 @@ def is_active_tmux_context() -> Optional[bool]:
 
 
 def is_active_context() -> bool:
-    if not is_active_iterm_tab():
-        return False
-
-    tmux_active = is_active_tmux_context()
-    if tmux_active is None:
-        return True
-    return tmux_active
+    # Only suppress when we can positively confirm Codex is visible already.
+    return is_active_iterm_tab() and is_active_tmux_context()
 
 
 def truncate(message: str, limit: int = 180) -> str:
@@ -109,13 +118,26 @@ def truncate(message: str, limit: int = 180) -> str:
     return message[: limit - 3] + "..."
 
 
-def native_notify(title: str, message: str, sound: str) -> None:
+def run_command(args: list[str]) -> bool:
+    try:
+        result = subprocess.run(
+            args,
+            capture_output=True,
+            text=True,
+            timeout=NOTIFICATION_TIMEOUT_SECONDS,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return result.returncode == 0
+
+
+def native_notify(title: str, message: str, sound: str) -> bool:
     script = (
         f"display notification {json.dumps(message)} "
         f"with title {json.dumps(title)} "
         f'sound name "{sound}"'
     )
-    subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+    return run_command(["osascript", "-e", script])
 
 
 def terminal_notify(title: str, message: str, sound: str, group: Optional[str]) -> bool:
@@ -131,13 +153,12 @@ def terminal_notify(title: str, message: str, sound: str, group: Optional[str]) 
         "-sound",
         sound,
         "-activate",
-        "com.googlecode.iterm2",
+        ITERM_BUNDLE_ID,
     ]
     if group:
         args.extend(["-group", group])
 
-    subprocess.run(args, capture_output=True, text=True)
-    return True
+    return run_command(args)
 
 
 def notify(title: str, message: str, sound: str = "Ping", group: Optional[str] = None) -> None:

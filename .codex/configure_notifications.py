@@ -12,7 +12,7 @@ NOTIFY_LINE = (
     'notify = ["sh", "-lc", "python3 \\"$HOME/.codex/notify.py\\" \\"$1\\"", "codex-notify"]'
 )
 TUI_LINES = [
-    'notifications = ["approval-requested", "user-input-requested"]',
+    'notifications = ["agent-turn-complete", "approval-requested", "user-input-requested"]',
     'notification_method = "auto"',
 ]
 
