@@ -1,29 +1,52 @@
-# Dotfiles Instructions
+# Global Claude Code Instructions
 
-The canonical dotfiles repo lives at `~/dotfiles` on `master`.
+<!--
+  This file applies to all Claude Code sessions across every project.
+  Use it for personal preferences, workflow conventions, and cross-project standards.
+  Project-level CLAUDE.md files (checked into each repo) take precedence over this file.
+-->
 
-Shell config symlinks (for example `~/.zshrc`) should point to files in the
-main repo, not to a worktree.
+# Dotfiles
 
-When changing dotfiles:
-- Prefer reusable changes in the repo over one-off edits in `$HOME`.
-- Wire user-facing dotfile files into place through `./install.sh`.
-- For files that should live in `$HOME`, prefer symlinks created by `./install.sh`.
-- Do not copy files directly into `$HOME` as a substitute for the repo + install flow.
-- Do not assume a worktree change is live in `~/dotfiles` until it has been
-  merged into `master`.
-- If a change introduces a new tool or CLI dependency, add a matching install
-  block to `install.sh`.
+If you detect improvements or changes that should be made to dotfiles, go ahead and make them. Always commit changes immediately after making them — never leave modified or untracked files unstaged. Never amend or rewrite existing git history — always create new commits.
 
-Worktree flow:
-1. Make the change on the worktree branch first.
-2. When the user wants it merged, fast-forward `~/dotfiles` (`master`) to the
-   worktree branch.
-3. Rebase the worktree branch onto `master` after that fast-forward.
-4. Never make the same change independently in both `master` and a worktree.
+The dotfiles repo lives at `~/dotfiles` (master branch). Shell config symlinks (e.g. `~/.zshrc`) point to files in the main repo, not to any worktree. When working in a worktree, always apply dotfile fixes to the main repo (`~/dotfiles`) as well so they take effect immediately.
+
+Worktree workflow — always follow this order:
+1. Commit all changes to the worktree branch first
+2. Fast-forward master to match: `cd ~/dotfiles && git merge --ff-only <worktree-branch>`
+3. Rebase the worktree branch onto master: `cd <worktree> && git rebase master`
+
+Never commit the same change independently to both master and a worktree branch.
+
+If a change introduces a new tool or CLI dependency, add a corresponding install block to `install.sh` following the existing pattern (check if installed, prompt to install via brew, skip if declined).
 
 # Code Comments
 
-Do not describe implementation details in comments outside the function where
-those details live. Call-site comments should explain intent or why, not the
-mechanics of the called function.
+Do not describe implementation details in comments outside the function where those details live. Call-site comments should describe *intent* or *why* — not the mechanics of what the called function does internally. Those mechanics belong in the function itself (or can be omitted entirely if the code is self-explanatory).
+
+**Bad** — the comment leaks implementation details that belong inside `isNpLoadShedPatientEligible`:
+```go
+// If the NP load shedding lever is enabled, apply additional eligibility restrictions.
+// When active, only HTN (<85 yrs) and CHF HFpEF (≤85 yrs) patients with appointments
+// in the configured date range are eligible.
+if s.isNpLoadShedEnabled() {
+    if !s.isNpLoadShedPatientEligible(record) {
+        return false, string(SkipReasonNpLoadShedIneligiblePatient)
+    }
+    ...
+}
+```
+
+**Good** — the comment states intent only, details stay inside the called functions:
+```go
+// Apply additional eligibility restrictions when NP load shedding is active.
+if s.isNpLoadShedEnabled() {
+    if !s.isNpLoadShedPatientEligible(record) {
+        return false, string(SkipReasonNpLoadShedIneligiblePatient)
+    }
+    ...
+}
+```
+
+Or omit the comment entirely when the code reads clearly on its own. The risk of call-site implementation comments is that they silently go stale when the underlying function changes, misleading future readers.
