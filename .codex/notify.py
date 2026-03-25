@@ -10,6 +10,7 @@ iTerm/tmux context.
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -17,6 +18,8 @@ from typing import Optional
 
 
 OTHER_FRONTMOST_APP = "__OTHER_FRONTMOST_APP__"
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+CLICK_HANDLER = os.path.join(SCRIPT_DIR, "notify_click.py")
 TERMINAL_NOTIFIER = shutil.which("terminal-notifier")
 ITERM_BUNDLE_ID = "com.googlecode.iterm2"
 NOTIFICATION_TIMEOUT_SECONDS = 5
@@ -118,17 +121,74 @@ def truncate(message: str, limit: int = 180) -> str:
     return message[: limit - 3] + "..."
 
 
+def run(args: list[str]) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        args,
+        capture_output=True,
+        text=True,
+        timeout=NOTIFICATION_TIMEOUT_SECONDS,
+    )
+
+
 def run_command(args: list[str]) -> bool:
     try:
-        result = subprocess.run(
-            args,
-            capture_output=True,
-            text=True,
-            timeout=NOTIFICATION_TIMEOUT_SECONDS,
-        )
+        result = run(args)
     except (OSError, subprocess.TimeoutExpired):
         return False
     return result.returncode == 0
+
+
+def tmux_value(target: str, fmt: str) -> Optional[str]:
+    try:
+        result = run(["tmux", "display-message", "-p", "-t", target, fmt])
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0:
+        return None
+
+    value = result.stdout.strip()
+    return value if value else None
+
+
+def notification_context() -> dict[str, str]:
+    context: dict[str, str] = {}
+
+    iterm_session = current_iterm_session_uuid()
+    if iterm_session:
+        context["iterm_session"] = iterm_session
+
+    tmux_pane = os.environ.get("TMUX_PANE")
+    if not tmux_pane:
+        return context
+
+    context["pane_id"] = tmux_pane
+
+    client_tty = tmux_value(tmux_pane, "#{client_tty}")
+    if client_tty:
+        context["client_tty"] = client_tty
+
+    window_id = tmux_value(tmux_pane, "#{window_id}")
+    if window_id:
+        context["window_id"] = window_id
+
+    session_name = tmux_value(tmux_pane, "#{session_name}")
+    if session_name:
+        context["session_name"] = session_name
+
+    return context
+
+
+def click_command(context: dict[str, str]) -> Optional[str]:
+    if not os.path.isfile(CLICK_HANDLER):
+        return None
+
+    command = [sys.executable or "python3", CLICK_HANDLER]
+    for key in ("iterm_session", "client_tty", "session_name", "window_id", "pane_id"):
+        value = context.get(key)
+        if value:
+            command.extend([f"--{key.replace('_', '-')}", value])
+
+    return " ".join(shlex.quote(part) for part in command)
 
 
 def native_notify(title: str, message: str, sound: str) -> bool:
@@ -140,7 +200,13 @@ def native_notify(title: str, message: str, sound: str) -> bool:
     return run_command(["osascript", "-e", script])
 
 
-def terminal_notify(title: str, message: str, sound: str, group: Optional[str]) -> bool:
+def terminal_notify(
+    title: str,
+    message: str,
+    sound: str,
+    context: dict[str, str],
+    group: Optional[str],
+) -> bool:
     if not TERMINAL_NOTIFIER:
         return False
 
@@ -152,9 +218,12 @@ def terminal_notify(title: str, message: str, sound: str, group: Optional[str]) 
         message,
         "-sound",
         sound,
-        "-activate",
-        ITERM_BUNDLE_ID,
     ]
+    command = click_command(context)
+    if command:
+        args.extend(["-execute", command])
+    else:
+        args.extend(["-activate", ITERM_BUNDLE_ID])
     if group:
         args.extend(["-group", group])
 
@@ -166,7 +235,8 @@ def notify(title: str, message: str, sound: str = "Ping", group: Optional[str] =
         return
 
     message = truncate(message)
-    if terminal_notify(title, message, sound, group):
+    context = notification_context()
+    if terminal_notify(title, message, sound, context, group):
         return
     native_notify(title, message, sound)
 
