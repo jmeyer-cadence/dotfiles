@@ -117,8 +117,12 @@ def is_active_tmux_context() -> bool:
 
 
 def is_active_context() -> bool:
-    # Only suppress when we can positively confirm Codex is visible already.
-    return is_active_iterm_tab() and is_active_tmux_context()
+    # tmux active-pane state remains "active" even when the containing iTerm tab
+    # is hidden, so only suppress non-tmux sessions.
+    if os.environ.get("TMUX_PANE"):
+        return False
+
+    return is_active_iterm_tab()
 
 
 def truncate(message: str, limit: int = 180) -> str:
