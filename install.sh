@@ -192,7 +192,7 @@ fi
 
 if [ -x "$(command -v terminal-notifier)" ]; then
     success "terminal-notifier already installed"
-elif ask "terminal-notifier not found. Install it? (optional: Claude hooks use it for clickable notifications that can reopen iTerm and restore the relevant tmux context; without it, notifications fall back to the native macOS banner with no custom click action)"; then
+elif ask "terminal-notifier not found. Install it? (optional: Claude hooks and Codex notifications use it for richer macOS banners; without it, notifications fall back to the native macOS banner with no custom click action)"; then
     brew install terminal-notifier
     success "terminal-notifier installed"
 else
@@ -362,10 +362,17 @@ link_file "$DOTFILES/.gitignore_global" "$HOME/.gitignore_global"
 link_file "$DOTFILES/.inputrc"          "$HOME/.inputrc"
 link_file "$DOTFILES/.pyrc"             "$HOME/.pyrc"
 link_file "$DOTFILES/.tmux.conf"        "$HOME/.tmux.conf"
+link_file "$DOTFILES/.codex/notify.py"        "$HOME/.codex/notify.py"
 link_file "$DOTFILES/.claude/CLAUDE.md"        "$HOME/.claude/CLAUDE.md"
 link_file "$DOTFILES/.claude/hooks"            "$HOME/.claude/hooks"
 link_file "$DOTFILES/.claude/keybindings.json" "$HOME/.claude/keybindings.json"
 link_file "$DOTFILES/.claude/settings.json"    "$HOME/.claude/settings.json"
+
+if python3 "$DOTFILES/.codex/configure_notifications.py" "$HOME/.codex/config.toml"; then
+    success "codex notification settings updated"
+else
+    warning "codex notification settings could not be updated"
+fi
 
 # ================
 # tmux plugins
