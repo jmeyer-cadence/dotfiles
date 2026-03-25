@@ -2,6 +2,8 @@
 """Restore the relevant iTerm/tmux context when a Codex notification is clicked."""
 
 import argparse
+import base64
+import json
 import os
 import re
 import shutil
@@ -41,6 +43,26 @@ def parse_iterm_session_id(session_id: Optional[str]) -> Optional[tuple[int, int
     window_index = int(match.group(1)) + 1
     tab_index = int(match.group(2)) + 1
     return window_index, tab_index
+
+
+def decode_context(encoded_context: Optional[str]) -> dict[str, str]:
+    if not encoded_context:
+        return {}
+
+    try:
+        payload = base64.urlsafe_b64decode(encoded_context.encode("ascii"))
+        decoded = json.loads(payload.decode("utf-8"))
+    except (ValueError, json.JSONDecodeError):
+        return {}
+
+    if not isinstance(decoded, dict):
+        return {}
+
+    context: dict[str, str] = {}
+    for key, value in decoded.items():
+        if isinstance(value, str) and value:
+            context[key] = value
+    return context
 
 
 def focus_iterm_tab(session_id: Optional[str]) -> bool:
@@ -212,6 +234,7 @@ def focus_tmux_target(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--context")
     parser.add_argument("--iterm-session-id")
     parser.add_argument("--iterm-session")
     parser.add_argument("--client-tty")
@@ -223,8 +246,17 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    focus_iterm_session(args.iterm_session_id, args.iterm_session)
-    focus_tmux_target(args.pane_id, args.window_id, args.session_name, args.client_tty)
+    context = decode_context(args.context)
+
+    iterm_session_id = args.iterm_session_id or context.get("iterm_session_id")
+    iterm_session = args.iterm_session or context.get("iterm_session")
+    client_tty = args.client_tty or context.get("client_tty")
+    session_name = args.session_name or context.get("session_name")
+    window_id = args.window_id or context.get("window_id")
+    pane_id = args.pane_id or context.get("pane_id")
+
+    focus_iterm_session(iterm_session_id, iterm_session)
+    focus_tmux_target(pane_id, window_id, session_name, client_tty)
 
 
 if __name__ == "__main__":

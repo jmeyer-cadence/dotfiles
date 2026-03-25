@@ -7,6 +7,7 @@ Notifications are suppressed when Codex is already visible in the active
 iTerm/tmux context.
 """
 
+import base64
 import json
 import os
 import re
@@ -191,18 +192,8 @@ def click_command(context: dict[str, str]) -> Optional[str]:
     if not os.path.isfile(CLICK_HANDLER):
         return None
 
-    command = [sys.executable or "python3", CLICK_HANDLER]
-    for key in (
-        "iterm_session_id",
-        "iterm_session",
-        "client_tty",
-        "session_name",
-        "window_id",
-        "pane_id",
-    ):
-        value = context.get(key)
-        if value:
-            command.extend([f"--{key.replace('_', '-')}", value])
+    encoded_context = base64.urlsafe_b64encode(json.dumps(context).encode("utf-8")).decode("ascii")
+    command = [sys.executable or "python3", CLICK_HANDLER, "--context", encoded_context]
 
     return " ".join(shlex.quote(part) for part in command)
 
