@@ -187,6 +187,10 @@ def select_tmux_window(target: str) -> bool:
     return run([TMUX, "select-window", "-t", target]).returncode == 0
 
 
+def select_tmux_pane(target: str) -> bool:
+    return run([TMUX, "select-pane", "-t", target]).returncode == 0
+
+
 def resolve_target_client(client_tty: Optional[str], session_name: Optional[str]) -> Optional[str]:
     if client_exists(client_tty):
         return client_tty
@@ -221,15 +225,14 @@ def focus_tmux_target(
     if not target_client or not target_session:
         return
 
-    if pane_id and target_exists(pane_id):
-        if switch_tmux_client(target_client, pane_id):
-            return
-
     if not switch_tmux_client(target_client, target_session):
         return
 
     if target_window and target_exists(target_window):
         select_tmux_window(target_window)
+
+    if pane_id and target_exists(pane_id):
+        select_tmux_pane(pane_id)
 
 
 def parse_args() -> argparse.Namespace:

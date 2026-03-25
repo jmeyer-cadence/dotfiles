@@ -118,7 +118,7 @@ def target_exists(target: Optional[str]) -> bool:
 
 
 def switch_tmux_client(client_tty: str, target: str) -> bool:
-    """Switch a tmux client to the target pane/window/session."""
+    """Switch a tmux client to the target session."""
     return run([TMUX, "switch-client", "-c", client_tty, "-t", target]).returncode == 0
 
 
@@ -156,15 +156,14 @@ def focus_tmux_target(
     if not target_client or not target_session:
         return
 
-    if pane_id and target_exists(pane_id):
-        if switch_tmux_client(target_client, pane_id):
-            return
-
     if not switch_tmux_client(target_client, target_session):
         return
 
     if target_window and target_exists(target_window):
         select_tmux_window(target_window)
+
+    if pane_id and target_exists(pane_id):
+        select_tmux_pane(pane_id)
 
 
 def parse_args() -> argparse.Namespace:
