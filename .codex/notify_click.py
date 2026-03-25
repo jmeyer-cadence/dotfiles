@@ -3,6 +3,7 @@
 
 import argparse
 import os
+import re
 import shutil
 import subprocess
 from typing import Optional
@@ -22,13 +23,60 @@ def resolve_command(command: str, fallbacks: list[str]) -> str:
 
 OSASCRIPT = resolve_command("osascript", ["/usr/bin/osascript"])
 TMUX = resolve_command("tmux", ["/opt/homebrew/bin/tmux", "/usr/local/bin/tmux"])
+ITERM_SESSION_PATTERN = re.compile(r"^w(\d+)t(\d+)p\d+:[A-F0-9-]+$", re.IGNORECASE)
 
 
 def run(args: list[str]) -> subprocess.CompletedProcess:
     return subprocess.run(args, capture_output=True, text=True)
 
 
-def focus_iterm_session(session_uuid: Optional[str]) -> None:
+def parse_iterm_session_id(session_id: Optional[str]) -> Optional[tuple[int, int]]:
+    if not session_id:
+        return None
+
+    match = ITERM_SESSION_PATTERN.match(session_id)
+    if not match:
+        return None
+
+    window_index = int(match.group(1)) + 1
+    tab_index = int(match.group(2)) + 1
+    return window_index, tab_index
+
+
+def focus_iterm_tab(session_id: Optional[str]) -> bool:
+    parsed = parse_iterm_session_id(session_id)
+    if not parsed:
+        return False
+
+    window_index, tab_index = parsed
+    script = f"""
+tell application "iTerm2"
+    if (count of windows) < {window_index} then
+        return ""
+    end if
+
+    tell item {window_index} of windows
+        select
+        if (count of tabs) < {tab_index} then
+            return ""
+        end if
+        tell item {tab_index} of tabs
+            select
+        end tell
+    end tell
+
+    activate
+    return "focused"
+end tell
+"""
+    result = run([OSASCRIPT, "-e", script])
+    return result.returncode == 0 and result.stdout.strip() == "focused"
+
+
+def focus_iterm_session(session_id: Optional[str], session_uuid: Optional[str]) -> None:
+    if focus_iterm_tab(session_id):
+        return
+
     if session_uuid:
         script = f"""
 tell application "iTerm2"
@@ -38,7 +86,7 @@ tell application "iTerm2"
                 if unique ID of s is "{session_uuid}" then
                     tell w to select
                     tell t to select
-                    tell s to select
+                    activate
                     return "focused"
                 end if
             end repeat
@@ -62,21 +110,22 @@ def tmux_value(target: str, fmt: str) -> Optional[str]:
     return value if value else None
 
 
-def first_client_for_session(session_name: Optional[str]) -> Optional[str]:
+def client_ttys_for_session(session_name: Optional[str]) -> list[str]:
     if not session_name:
-        return None
+        return []
 
     result = run([TMUX, "list-clients", "-F", "#{client_tty}\t#{session_name}"])
     if result.returncode != 0:
-        return None
+        return []
 
+    client_ttys: list[str] = []
     for line in result.stdout.splitlines():
         if not line:
             continue
         client_tty, _, attached_session = line.partition("\t")
         if attached_session == session_name and client_tty:
-            return client_tty
-    return None
+            client_ttys.append(client_tty)
+    return client_ttys
 
 
 def client_exists(client_tty: Optional[str]) -> bool:
@@ -116,6 +165,17 @@ def select_tmux_window(target: str) -> bool:
     return run([TMUX, "select-window", "-t", target]).returncode == 0
 
 
+def resolve_target_client(client_tty: Optional[str], session_name: Optional[str]) -> Optional[str]:
+    if client_exists(client_tty):
+        return client_tty
+
+    client_ttys = client_ttys_for_session(session_name)
+    if len(client_ttys) == 1:
+        return client_ttys[0]
+
+    return None
+
+
 def focus_tmux_target(
     pane_id: Optional[str],
     window_id: Optional[str],
@@ -135,7 +195,7 @@ def focus_tmux_target(
 
     target_session = session_name or session_name_for_target(target)
     target_window = window_id or window_id_for_target(target)
-    target_client = client_tty if client_exists(client_tty) else first_client_for_session(target_session)
+    target_client = resolve_target_client(client_tty, target_session)
     if not target_client or not target_session:
         return
 
@@ -152,6 +212,7 @@ def focus_tmux_target(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--iterm-session-id")
     parser.add_argument("--iterm-session")
     parser.add_argument("--client-tty")
     parser.add_argument("--session-name")
@@ -162,7 +223,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    focus_iterm_session(args.iterm_session)
+    focus_iterm_session(args.iterm_session_id, args.iterm_session)
     focus_tmux_target(args.pane_id, args.window_id, args.session_name, args.client_tty)
 
 

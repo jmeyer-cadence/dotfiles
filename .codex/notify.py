@@ -31,6 +31,11 @@ def current_iterm_session_uuid() -> Optional[str]:
     return match.group(1).upper() if match else None
 
 
+def current_iterm_session_id() -> Optional[str]:
+    session_id = os.environ.get("ITERM_SESSION_ID", "").strip()
+    return session_id if session_id else None
+
+
 def active_iterm_session_uuid() -> Optional[str]:
     script = f"""
 tell application "System Events"
@@ -153,6 +158,10 @@ def tmux_value(target: str, fmt: str) -> Optional[str]:
 def notification_context() -> dict[str, str]:
     context: dict[str, str] = {}
 
+    iterm_session_id = current_iterm_session_id()
+    if iterm_session_id:
+        context["iterm_session_id"] = iterm_session_id
+
     iterm_session = current_iterm_session_uuid()
     if iterm_session:
         context["iterm_session"] = iterm_session
@@ -183,7 +192,14 @@ def click_command(context: dict[str, str]) -> Optional[str]:
         return None
 
     command = [sys.executable or "python3", CLICK_HANDLER]
-    for key in ("iterm_session", "client_tty", "session_name", "window_id", "pane_id"):
+    for key in (
+        "iterm_session_id",
+        "iterm_session",
+        "client_tty",
+        "session_name",
+        "window_id",
+        "pane_id",
+    ):
         value = context.get(key)
         if value:
             command.extend([f"--{key.replace('_', '-')}", value])
