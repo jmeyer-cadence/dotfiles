@@ -9,9 +9,10 @@ import json
 import os
 import subprocess
 import sys
+from typing import Optional
 
 
-def tmux_stable_pane_id(pane: str) -> str | None:
+def tmux_stable_pane_id(pane: str) -> Optional[str]:
     result = subprocess.run(
         ["tmux", "display-message", "-p", "-t", pane, "#{session_name}:#{window_index}:#{pane_index}"],
         capture_output=True,
