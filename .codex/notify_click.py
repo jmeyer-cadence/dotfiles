@@ -95,10 +95,31 @@ end tell
     return result.returncode == 0 and result.stdout.strip() == "focused"
 
 
-def focus_iterm_session(session_id: Optional[str], session_uuid: Optional[str]) -> None:
-    if focus_iterm_tab(session_id):
-        return
+def focus_iterm_client(client_tty: Optional[str]) -> bool:
+    if not client_tty:
+        return False
 
+    script = f"""
+tell application "iTerm2"
+    repeat with w in windows
+        repeat with t in tabs of w
+            repeat with s in sessions of t
+                if tty of s is "{client_tty}" then
+                    tell w to select
+                    tell t to select
+                    activate
+                    return "focused"
+                end if
+            end repeat
+        end repeat
+    end repeat
+end tell
+"""
+    result = run([OSASCRIPT, "-e", script])
+    return result.returncode == 0 and result.stdout.strip() == "focused"
+
+
+def focus_iterm_uuid(session_uuid: Optional[str]) -> bool:
     if session_uuid:
         script = f"""
 tell application "iTerm2"
@@ -118,7 +139,26 @@ end tell
 """
         result = run([OSASCRIPT, "-e", script])
         if result.returncode == 0 and result.stdout.strip() == "focused":
-            return
+            return True
+
+    return False
+
+
+def focus_iterm_session(
+    session_id: Optional[str],
+    session_uuid: Optional[str],
+    client_tty: Optional[str],
+) -> None:
+    # tmux panes retain the iTerm session env from when the pane was created,
+    # so restore the visible tab from the attached tmux client tty first.
+    if focus_iterm_client(client_tty):
+        return
+
+    if focus_iterm_uuid(session_uuid):
+        return
+
+    if focus_iterm_tab(session_id):
+        return
 
     run([OSASCRIPT, "-e", 'tell application "iTerm2" to activate'])
 
@@ -258,7 +298,7 @@ def main() -> None:
     window_id = args.window_id or context.get("window_id")
     pane_id = args.pane_id or context.get("pane_id")
 
-    focus_iterm_session(iterm_session_id, iterm_session)
+    focus_iterm_session(iterm_session_id, iterm_session, client_tty)
     focus_tmux_target(pane_id, window_id, session_name, client_tty)
 
 

@@ -3,8 +3,9 @@
 
 Handles Codex's external `notify` callback for completed turns.
 Prefers terminal-notifier on macOS and falls back to AppleScript banners.
-Notifications are suppressed when Codex is already visible in the active
-iTerm/tmux context.
+Notifications only fire when Codex is not already visible in the active
+iTerm2 context. Inside tmux, that means the active pane in the active
+window; background panes in the focused tab still notify.
 """
 
 import base64
@@ -78,14 +79,14 @@ def is_active_iterm_tab() -> bool:
     if active_uuid == OTHER_FRONTMOST_APP:
         return False
     if not active_uuid or not our_uuid:
-        return False
+        return True
     return active_uuid == our_uuid
 
 
-def is_active_tmux_context() -> bool:
+def is_active_tmux_context() -> Optional[bool]:
     tmux_pane = os.environ.get("TMUX_PANE")
     if not tmux_pane:
-        return True
+        return None
 
     try:
         result = subprocess.run(
@@ -102,13 +103,13 @@ def is_active_tmux_context() -> bool:
             timeout=NOTIFICATION_TIMEOUT_SECONDS,
         )
     except (OSError, subprocess.TimeoutExpired):
-        return False
+        return None
     if result.returncode != 0:
-        return False
+        return None
 
     parts = result.stdout.strip().split("\t")
     if len(parts) != 3:
-        return False
+        return None
 
     session_attached, window_active, pane_active = parts
     if session_attached == "0":
@@ -117,12 +118,13 @@ def is_active_tmux_context() -> bool:
 
 
 def is_active_context() -> bool:
-    # tmux active-pane state remains "active" even when the containing iTerm tab
-    # is hidden, so only suppress non-tmux sessions.
-    if os.environ.get("TMUX_PANE"):
+    if not is_active_iterm_tab():
         return False
 
-    return is_active_iterm_tab()
+    tmux_active = is_active_tmux_context()
+    if tmux_active is None:
+        return True
+    return tmux_active
 
 
 def truncate(message: str, limit: int = 180) -> str:
