@@ -386,6 +386,43 @@ else
     warning "codex notification settings could not be updated"
 fi
 
+# ======
+# iTerm2
+# ======
+
+starting "iTerm2"
+
+if [ -d "/Applications/iTerm.app" ] || [ -d "/Applications/iTerm2.app" ]; then
+    ITERM_DYNAMIC_PROFILES_SRC="$DOTFILES/iterm2/DynamicProfiles/dotfiles-profiles.json"
+    ITERM_DYNAMIC_PROFILES_DEST="$HOME/Library/Application Support/iTerm2/DynamicProfiles/dotfiles-profiles.json"
+    ITERM_DEFAULT_PROFILE_GUID="$(python3 - "$ITERM_DYNAMIC_PROFILES_SRC" <<'PY'
+import json, sys
+
+with open(sys.argv[1], 'r', encoding='utf-8') as f:
+    profiles = json.load(f).get('Profiles', [])
+
+for profile in profiles:
+    if profile.get('Name') == 'Dotfiles Default':
+        print(profile.get('Guid', ''))
+        break
+PY
+)"
+
+    link_file "$ITERM_DYNAMIC_PROFILES_SRC" "$ITERM_DYNAMIC_PROFILES_DEST"
+
+    if [ -n "$ITERM_DEFAULT_PROFILE_GUID" ] && defaults write com.googlecode.iterm2 "Default Bookmark Guid" -string "$ITERM_DEFAULT_PROFILE_GUID"; then
+        success "iTerm2 default profile set to Dotfiles Default"
+    else
+        warning "could not set the iTerm2 default profile"
+    fi
+
+    if pgrep -x iTerm2 &>/dev/null; then
+        warning "restart iTerm2 to pick up default-profile changes for new windows"
+    fi
+else
+    skipping "iTerm2 dynamic profiles (iTerm2.app not installed)"
+fi
+
 # ================
 # tmux plugins
 # ================
