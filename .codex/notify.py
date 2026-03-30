@@ -25,6 +25,7 @@ CLICK_HANDLER = os.path.join(SCRIPT_DIR, "notify_click.py")
 TERMINAL_NOTIFIER = shutil.which("terminal-notifier")
 ITERM_BUNDLE_ID = "com.googlecode.iterm2"
 NOTIFICATION_TIMEOUT_SECONDS = 5
+RESURRECT_MAP_PATH = os.path.expanduser("~/.codex/resurrect_sessions.json")
 
 
 def current_iterm_session_uuid() -> Optional[str]:
@@ -162,6 +163,37 @@ def tmux_value(target: str, fmt: str) -> Optional[str]:
     return value if value else None
 
 
+def tmux_stable_pane_id(target: str) -> Optional[str]:
+    return tmux_value(target, "#{session_name}:#{window_index}:#{pane_index}")
+
+
+def save_resurrect_session(thread_id: Optional[str]) -> None:
+    if not thread_id:
+        return
+
+    tmux_pane = os.environ.get("TMUX_PANE")
+    if not tmux_pane:
+        return
+
+    stable_id = tmux_stable_pane_id(tmux_pane)
+    if not stable_id:
+        return
+
+    try:
+        with open(RESURRECT_MAP_PATH) as f:
+            resurrect_map = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        resurrect_map = {}
+
+    resurrect_map[stable_id] = thread_id
+
+    try:
+        with open(RESURRECT_MAP_PATH, "w") as f:
+            json.dump(resurrect_map, f, indent=2)
+    except OSError:
+        return
+
+
 def notification_context() -> dict[str, str]:
     context: dict[str, str] = {}
 
@@ -266,13 +298,15 @@ def main() -> int:
     if payload.get("type") != "agent-turn-complete":
         return 0
 
+    thread_id = payload.get("thread-id") or payload.get("thread_id") or payload.get("session_id")
+    save_resurrect_session(thread_id)
+
     last_message = (payload.get("last-assistant-message") or "").strip()
     input_messages = payload.get("input-messages") or []
     first_input = input_messages[0].strip() if input_messages else ""
 
     title = "Codex - Done"
     message = last_message or first_input or "Agent has completed"
-    thread_id = payload.get("thread-id")
     group = f"codex-{thread_id}" if thread_id else None
 
     notify(title, message, group=group)
