@@ -393,13 +393,14 @@ fi
 starting "iTerm2"
 
 if [ -d "/Applications/iTerm.app" ] || [ -d "/Applications/iTerm2.app" ]; then
-    ITERM_DYNAMIC_PROFILES_SRC="$DOTFILES/iterm2/DynamicProfiles/dotfiles-profiles.json"
-    ITERM_DYNAMIC_PROFILES_DEST="$HOME/Library/Application Support/iTerm2/DynamicProfiles/dotfiles-profiles.json"
+    ITERM_DYNAMIC_PROFILES_SRC="$DOTFILES/iterm2/DynamicProfiles/dotfiles-profiles.plist"
+    ITERM_DYNAMIC_PROFILES_DEST="$HOME/Library/Application Support/iTerm2/DynamicProfiles/dotfiles-profiles.plist"
+    ITERM_DYNAMIC_PROFILES_LEGACY_DEST="$HOME/Library/Application Support/iTerm2/DynamicProfiles/dotfiles-profiles.json"
     ITERM_DEFAULT_PROFILE_GUID="$(python3 - "$ITERM_DYNAMIC_PROFILES_SRC" <<'PY'
-import json, sys
+import plistlib, sys
 
-with open(sys.argv[1], 'r', encoding='utf-8') as f:
-    profiles = json.load(f).get('Profiles', [])
+with open(sys.argv[1], 'rb') as f:
+    profiles = plistlib.load(f).get('Profiles', [])
 
 for profile in profiles:
     if profile.get('Name') == 'Dotfiles Default':
@@ -407,6 +408,17 @@ for profile in profiles:
         break
 PY
 )"
+
+    if [ -L "$ITERM_DYNAMIC_PROFILES_LEGACY_DEST" ]; then
+        rm "$ITERM_DYNAMIC_PROFILES_LEGACY_DEST" && success "removed legacy iTerm2 JSON profile link"
+    elif [ -e "$ITERM_DYNAMIC_PROFILES_LEGACY_DEST" ]; then
+        warning "${ITERM_DYNAMIC_PROFILES_LEGACY_DEST/#$HOME/~} is an old JSON profile file"
+        if ask "Remove the legacy iTerm2 JSON profile file?"; then
+            rm "$ITERM_DYNAMIC_PROFILES_LEGACY_DEST" && success "removed legacy iTerm2 JSON profile file"
+        else
+            warning "legacy iTerm2 JSON profile file left in place"
+        fi
+    fi
 
     link_file "$ITERM_DYNAMIC_PROFILES_SRC" "$ITERM_DYNAMIC_PROFILES_DEST"
 
