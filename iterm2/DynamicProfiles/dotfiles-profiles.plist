@@ -792,7 +792,15 @@
 				<string>telnet</string>
 			</array>
 			<key>Keyboard Map</key>
-			<dict/>
+			<dict>
+				<key>0x63-0x100000</key>
+				<dict>
+					<key>Action</key>
+					<integer>11</integer>
+					<key>Text</key>
+					<string>0x1b 0x63</string>
+				</dict>
+			</dict>
 			<key>Link Color</key>
 			<dict>
 				<key>Alpha Component</key>
