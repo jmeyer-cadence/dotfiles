@@ -68,6 +68,64 @@ git_pull_origin_default_rebase() {
 }
 alias gpomr=git_pull_origin_default_rebase
 
+# Default new workmux worktrees to the latest upstream default branch.
+workmux_add_uses_custom_base() {
+    local arg
+
+    for arg in "$@"; do
+        case "$arg" in
+            --base|--base=*|--pr|--pr=*)
+                return 0
+                ;;
+        esac
+    done
+
+    return 1
+}
+
+workmux_latest_default_base() {
+    local default_branch
+
+    default_branch="$(git_default_branch)" || return 1
+
+    if git show-ref --verify --quiet "refs/remotes/origin/$default_branch"; then
+        git fetch origin "$default_branch" >/dev/null 2>&1 || \
+            printf 'workmux: warning: unable to refresh origin/%s; using cached ref\n' "$default_branch" >&2
+        printf 'origin/%s\n' "$default_branch"
+        return 0
+    fi
+
+    if git show-ref --verify --quiet "refs/heads/$default_branch"; then
+        printf '%s\n' "$default_branch"
+        return 0
+    fi
+
+    return 1
+}
+
+workmux() {
+    if [ "$1" = "add" ]; then
+        shift
+
+        if ! workmux_add_uses_custom_base "$@"; then
+            local base_ref
+
+            base_ref="$(workmux_latest_default_base)" || {
+                command workmux add "$@"
+                return $?
+            }
+
+            command workmux add --base "$base_ref" "$@"
+            return $?
+        fi
+
+        command workmux add "$@"
+        return $?
+    fi
+
+    command workmux "$@"
+}
+
 git_prune_merged_default() {
     local default_branch
 
