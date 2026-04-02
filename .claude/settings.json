@@ -73,7 +73,30 @@
   "permissions": {
     "allow": [
       "Read(~/Projects/**)",
-      "Read(~/dotfiles/**)"
+      "Read(~/dotfiles/**)",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "Bash(git status*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git checkout*)",
+      "Bash(git branch*)",
+      "Bash(git fetch*)",
+      "Bash(git rebase*)",
+      "Bash(git stash*)",
+      "Bash(git show*)",
+      "Bash(git worktree*)",
+      "Bash(tmux*)",
+      "Bash(ls*)",
+      "Bash(cat*)",
+      "Bash(echo*)",
+      "Bash(which*)",
+      "Bash(brew*)"
     ]
   }
 }
