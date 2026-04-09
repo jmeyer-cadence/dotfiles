@@ -127,9 +127,9 @@ compinit
 path=("$HOME/.local/bin" $path)
 export PATH
 
-# Disable bracketed paste before launching Claude Code so its vim mode
-# doesn't render paste sequences as garbled È/É characters.
-claude() { printf '\e[?2004l'; command claude "$@"; printf '\e[?2004h'; }
+# Prevent zsh from enabling terminal bracketed paste mode. Claude Code's
+# vim mode doesn't handle the escape sequences, rendering È/É on paste.
+unset zle_bracketed_paste
 
 # ================
 # Shell completions
