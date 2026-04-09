@@ -127,6 +127,10 @@ compinit
 path=("$HOME/.local/bin" $path)
 export PATH
 
+# Disable bracketed paste before launching Claude Code so its vim mode
+# doesn't render paste sequences as garbled È/É characters.
+claude() { printf '\e[?2004l'; command claude "$@"; printf '\e[?2004h'; }
+
 # ================
 # Shell completions
 # ================

@@ -4,6 +4,3 @@
 
 set editing-mode vi
 set keymap vi-command
-
-# Prevent bracketed paste escape sequences from appearing as literal characters (È/É)
-set enable-bracketed-paste off
