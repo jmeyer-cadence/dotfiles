@@ -882,6 +882,8 @@
 			<string>Monaco 12</string>
 			<key>Option Key Sends</key>
 			<integer>0</integer>
+			<key>Allow Paste Bracketing</key>
+			<false/>
 			<key>Prompt Before Closing 2</key>
 			<integer>1</integer>
 			<key>Right Option Key Sends</key>

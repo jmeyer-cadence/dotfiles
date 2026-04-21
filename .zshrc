@@ -127,10 +127,6 @@ compinit
 path=("$HOME/.local/bin" $path)
 export PATH
 
-# Prevent zsh from enabling terminal bracketed paste mode. Claude Code's
-# vim mode doesn't handle the escape sequences, rendering È/É on paste.
-unset zle_bracketed_paste
-
 # ================
 # Shell completions
 # ================
