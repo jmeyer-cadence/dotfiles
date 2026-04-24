@@ -21,6 +21,7 @@ from typing import Optional
 
 OTHER_FRONTMOST_APP = "__OTHER_FRONTMOST_APP__"
 CODEX_DESKTOP_ORIGINATOR = "Codex Desktop"
+CODEX_BUNDLE_ID = "com.openai.codex"
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 CLICK_HANDLER = os.path.join(SCRIPT_DIR, "notify_click.py")
 TERMINAL_NOTIFIER = shutil.which("terminal-notifier")
@@ -265,6 +266,7 @@ def terminal_notify(
     sound: str,
     context: dict[str, str],
     group: Optional[str],
+    activate_bundle_id: Optional[str] = None,
 ) -> bool:
     if not TERMINAL_NOTIFIER:
         return False
@@ -278,11 +280,14 @@ def terminal_notify(
         "-sound",
         sound,
     ]
-    command = click_command(context)
-    if command:
-        args.extend(["-execute", command])
+    if activate_bundle_id:
+        args.extend(["-activate", activate_bundle_id])
     else:
-        args.extend(["-activate", ITERM_BUNDLE_ID])
+        command = click_command(context)
+        if command:
+            args.extend(["-execute", command])
+        else:
+            args.extend(["-activate", ITERM_BUNDLE_ID])
     if group:
         args.extend(["-group", group])
 
@@ -308,7 +313,17 @@ def notify_with_fallback(
     group: Optional[str] = None,
 ) -> None:
     if is_codex_desktop_origin(payload):
-        native_notify(title, truncate(message), sound)
+        message = truncate(message)
+        if terminal_notify(
+            title,
+            message,
+            sound,
+            context={},
+            group=group,
+            activate_bundle_id=CODEX_BUNDLE_ID,
+        ):
+            return
+        native_notify(title, message, sound)
         return
 
     notify(title, message, sound=sound, group=group)
