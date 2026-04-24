@@ -19,6 +19,8 @@ Worktree workflow — always follow this order:
 
 Never commit the same change independently to both master and a worktree branch.
 
+For workmux-managed worktrees, keep the default post-create sync behavior in `~/.config/workmux/config.yaml` so every agent rebases onto the repo's upstream default branch (`main`, `master`, or whatever `origin/HEAD` points to). In project `.workmux.yaml` files, include `'<global>'` in `post_create` when you want that global hook to apply.
+
 Never enable auto-merge on a pull request unless the user has given express consent for that specific action. If auto-merge might be useful, ask first and wait for a clear yes.
 
 If a change introduces a new tool or CLI dependency, add a corresponding install block to `install.sh` following the existing pattern (check if installed, prompt to install via brew, skip if declined).

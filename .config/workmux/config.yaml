@@ -1,5 +1,24 @@
 nerdfont: false
 status_format: false
 
+post_create:
+  - |
+    default_branch="$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null | sed 's@^origin/@@')"
+    if [[ -z "$default_branch" ]]; then
+      for candidate in main master; do
+        if git show-ref --verify --quiet "refs/remotes/origin/${candidate}"; then
+          default_branch="$candidate"
+          break
+        fi
+      done
+    fi
+    if [[ -n "$default_branch" ]]; then
+      git fetch origin "$default_branch" --quiet
+      git rebase "origin/$default_branch"
+      echo "Rebased onto latest origin/$default_branch"
+    else
+      echo "Warning: could not determine origin default branch; skipping rebase" >&2
+    fi
+
 sidebar:
   width: 40
