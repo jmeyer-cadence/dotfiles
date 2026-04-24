@@ -1,6 +1,8 @@
 [user]
 	name = justian-meyer
 	email = meyer.justian@gmail.com
+[includeIf "gitdir:~/dotfiles/"]
+	path = ~/.gitconfig.work
 [includeIf "gitdir:~/Projects/"]
 	path = ~/.gitconfig.work
 [includeIf "hasconfig:remote.*.url:git@github.com:cadencerpm/**"]
