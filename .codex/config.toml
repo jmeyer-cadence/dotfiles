@@ -1,0 +1,52 @@
+model = "gpt-5.4"
+model_reasoning_effort = "xhigh"
+plan_mode_reasoning_effort = "xhigh"
+
+sandbox_mode = "workspace-write"
+personality = "pragmatic"
+
+notify = ["sh", "-lc", "python3 \"$HOME/.codex/notify.py\" \"$1\"", "codex-notify"]
+
+[projects."/Users/justianmeyer/Projects/monorepo"]
+trust_level = "trusted"
+
+[projects."/Users/justianmeyer/dotfiles"]
+trust_level = "trusted"
+
+[projects."/Users/justianmeyer"]
+trust_level = "trusted"
+
+[notice.model_migrations]
+"gpt-5.3-codex" = "gpt-5.4"
+
+[mcp_servers.notion]
+command = "http"
+args = ["https://mcp.notion.com/mcp"]
+
+[mcp_servers.linear]
+url = "https://mcp.linear.app/mcp"
+
+[tui]
+notifications = ["agent-turn-complete", "approval-requested", "user-input-requested"]
+notification_method = "auto"
+
+[plugins."google-calendar@openai-curated"]
+enabled = true
+
+[plugins."gmail@openai-curated"]
+enabled = true
+
+[plugins."github@openai-curated"]
+enabled = true
+
+[plugins."google-drive@openai-curated"]
+enabled = true
+
+[plugins."linear@openai-curated"]
+enabled = true
+
+[plugins."slack@openai-curated"]
+enabled = true
+
+[features]
+codex_hooks = true

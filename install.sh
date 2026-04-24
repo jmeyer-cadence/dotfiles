@@ -90,6 +90,50 @@ function link_file() {
     fi
 }
 
+function link_file_with_backup() {
+    local src="$1"
+    local dest="$2"
+    local src_display="${src/#$HOME/~}"
+    local dest_display="${dest/#$HOME/~}"
+    local src_canonical
+    local dest_canonical
+    local current_link
+    local backup
+
+    mkdir -p "$(dirname "$dest")"
+    src_canonical="$(canonical_path "$src")"
+
+    if [ -L "$dest" ]; then
+        dest_canonical="$(canonical_path "$dest")"
+        if [ "$src_canonical" = "$dest_canonical" ]; then
+            success "$dest_display already symlinked"
+        else
+            current_link="$(readlink "$dest")"
+            warning "$dest_display points to ${current_link/#$HOME/~}"
+            if ask "Replace the symlink for $dest_display?"; then
+                rm "$dest" && ln -s "$src" "$dest" && success "updated symlink for $dest_display"
+            else
+                skipping "$dest_display"
+            fi
+        fi
+    elif [ -e "$dest" ]; then
+        if cmp -s "$src" "$dest"; then
+            rm "$dest" && ln -s "$src" "$dest" && success "replaced matching file with symlink for $dest_display"
+        else
+            warning "$dest_display exists but is not a symlink"
+            diff_files "$src" "$dest" "$src_display" "$dest_display"
+            if ask "Back up and replace $dest_display with a symlink?"; then
+                backup="$dest.backup.$(date +%Y%m%d%H%M%S)"
+                mv "$dest" "$backup" && ln -s "$src" "$dest" && success "backed up $dest_display to ${backup/#$HOME/~} and linked it"
+            else
+                skipping "$dest_display"
+            fi
+        fi
+    else
+        ln -s "$src" "$dest" && echo "${_INDENT}🔗 Linked: $dest_display -> $src_display"
+    fi
+}
+
 # =======================
 # Xcode Command Line Tools
 # =======================
@@ -376,17 +420,20 @@ link_file "$DOTFILES/.codex/hooks.json"       "$HOME/.codex/hooks.json"
 link_file "$DOTFILES/.codex/notify.py"        "$HOME/.codex/notify.py"
 link_file "$DOTFILES/.codex/codex_restore"    "$HOME/.codex/codex_restore"
 link_file "$DOTFILES/.codex/save_resurrect_session_map.py" "$HOME/.codex/save_resurrect_session_map.py"
+link_file "$DOTFILES/.codex/tmux_has_vim_on_tty.sh" "$HOME/.codex/tmux_has_vim_on_tty.sh"
 link_file "$DOTFILES/.codex/rules/default.rules" "$HOME/.codex/rules/default.rules"
 link_file "$DOTFILES/.claude/CLAUDE.md"        "$HOME/.claude/CLAUDE.md"
 link_file "$DOTFILES/.claude/hooks"            "$HOME/.claude/hooks"
 link_file "$DOTFILES/.claude/keybindings.json" "$HOME/.claude/keybindings.json"
 link_file "$DOTFILES/.claude/settings.json"    "$HOME/.claude/settings.json"
 
-if python3 "$DOTFILES/.codex/configure_notifications.py" "$HOME/.codex/config.toml"; then
+if python3 "$DOTFILES/.codex/configure_notifications.py" "$DOTFILES/.codex/config.toml"; then
     success "codex notification settings updated"
 else
     warning "codex notification settings could not be updated"
 fi
+
+link_file_with_backup "$DOTFILES/.codex/config.toml" "$HOME/.codex/config.toml"
 
 # ======
 # iTerm2
