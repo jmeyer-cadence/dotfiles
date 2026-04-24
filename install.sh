@@ -225,15 +225,6 @@ else
     skipping "workmux"
 fi
 
-if [ -x "$(command -v difit)" ]; then
-    success "difit already installed"
-elif ask "difit not found. Install it? (requires npm)"; then
-    npm install -g difit
-    success "difit installed"
-else
-    skipping "difit"
-fi
-
 if [ -x "$(command -v terminal-notifier)" ]; then
     success "terminal-notifier already installed"
 elif ask "terminal-notifier not found. Install it? (optional: Claude hooks and Codex notifications use it for richer macOS banners; without it, notifications fall back to the native macOS banner with no custom click action)"; then
