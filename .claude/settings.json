@@ -102,5 +102,8 @@
     ]
   },
   "effortLevel": "high",
-  "skipAutoPermissionPrompt": true
+  "skipAutoPermissionPrompt": true,
+  "theme": "dark-daltonized",
+  "editorMode": "vim",
+  "autoCompactEnabled": false
 }
