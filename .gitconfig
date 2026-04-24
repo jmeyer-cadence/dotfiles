@@ -3,6 +3,10 @@
 	email = meyer.justian@gmail.com
 [includeIf "gitdir:~/Projects/"]
 	path = ~/.gitconfig.work
+[includeIf "hasconfig:remote.*.url:git@github.com:cadencerpm/**"]
+	path = ~/.gitconfig.work
+[includeIf "hasconfig:remote.*.url:https://github.com/cadencerpm/**"]
+	path = ~/.gitconfig.work
 [core]
 	excludesfile = ~/.gitignore_global
 [alias]
