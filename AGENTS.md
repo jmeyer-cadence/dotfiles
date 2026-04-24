@@ -23,6 +23,16 @@ Never enable auto-merge on a pull request unless the user has given express cons
 
 If a change introduces a new tool or CLI dependency, add a corresponding install block to `install.sh` following the existing pattern (check if installed, prompt to install via brew, skip if declined).
 
+# GitHub
+
+When the GitHub connector is available, prefer GitHub connector or MCP tools for pull request, issue, review, comment, and repository reads and writes.
+
+Use `gh` only when the connector does not cover the task well, specifically for:
+- current-branch pull request discovery from local git context
+- GitHub Actions logs and check diagnostics
+- review-thread GraphQL fields not exposed by the connector
+- local branch, commit, push, and other inherently local git operations
+
 # Code Comments
 
 Do not describe implementation details in comments outside the function where those details live. Call-site comments should describe *intent* or *why* — not the mechanics of what the called function does internally. Those mechanics belong in the function itself (or can be omitted entirely if the code is self-explanatory).
