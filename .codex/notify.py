@@ -20,6 +20,7 @@ from typing import Optional
 
 
 OTHER_FRONTMOST_APP = "__OTHER_FRONTMOST_APP__"
+CODEX_DESKTOP_ORIGINATOR = "Codex Desktop"
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 CLICK_HANDLER = os.path.join(SCRIPT_DIR, "notify_click.py")
 TERMINAL_NOTIFIER = shutil.which("terminal-notifier")
@@ -132,6 +133,19 @@ def truncate(message: str, limit: int = 180) -> str:
     if len(message) <= limit:
         return message
     return message[: limit - 3] + "..."
+
+
+def is_codex_desktop_origin(payload: dict[str, object]) -> bool:
+    env_origin = os.environ.get("CODEX_INTERNAL_ORIGINATOR_OVERRIDE")
+    origins = [env_origin]
+    origins.extend(
+        payload.get(key) for key in ("originator", "originator_override", "originator-override")
+    )
+
+    for origin in origins:
+        if isinstance(origin, str) and origin.strip().casefold() == CODEX_DESKTOP_ORIGINATOR.casefold():
+            return True
+    return False
 
 
 def run(args: list[str]) -> subprocess.CompletedProcess:
@@ -286,6 +300,20 @@ def notify(title: str, message: str, sound: str = "Ping", group: Optional[str] =
     native_notify(title, message, sound)
 
 
+def notify_with_fallback(
+    title: str,
+    message: str,
+    payload: dict[str, object],
+    sound: str = "Ping",
+    group: Optional[str] = None,
+) -> None:
+    if is_codex_desktop_origin(payload):
+        native_notify(title, truncate(message), sound)
+        return
+
+    notify(title, message, sound=sound, group=group)
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         return 0
@@ -309,7 +337,7 @@ def main() -> int:
     message = last_message or first_input or "Agent has completed"
     group = f"codex-{thread_id}" if thread_id else None
 
-    notify(title, message, group=group)
+    notify_with_fallback(title, message, payload, group=group)
     return 0
 
 
