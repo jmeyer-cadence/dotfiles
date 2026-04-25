@@ -5,10 +5,122 @@
 alias src="source $HOME/.zshrc"
 alias zc="$EDITOR ~/.zshrc"
 
-alias df="cd $HOME/dotfiles"
+dotfiles_repo_root() {
+    printf '%s\n' "$HOME/dotfiles"
+}
+
+dotfiles_worktree_root() {
+    printf '%s\n' "$HOME/dotfiles__worktrees"
+}
+
+dotfiles_worktree_slug() {
+    local name="${1:-active}"
+    printf '%s\n' "${name//\//-}"
+}
+
+dotfiles_worktree_branch() {
+    local name="${1:-active}"
+    printf 'dotfiles/%s\n' "$name"
+}
+
+dotfiles_worktree_path() {
+    local name="${1:-active}"
+    printf '%s/%s\n' "$(dotfiles_worktree_root)" "$(dotfiles_worktree_slug "$name")"
+}
+
+dotfiles_worktree_create() {
+    local name="${1:-active}"
+    local repo path branch default_branch base_ref
+
+    repo="$(dotfiles_repo_root)"
+    path="$(dotfiles_worktree_path "$name")"
+    branch="$(dotfiles_worktree_branch "$name")"
+
+    if [ -d "$path" ]; then
+        printf '%s\n' "$path"
+        return 0
+    fi
+
+    mkdir -p "$(dotfiles_worktree_root)" || return 1
+
+    default_branch="$(git_default_branch_at "$repo")" || return 1
+    if git -C "$repo" show-ref --verify --quiet "refs/remotes/origin/$default_branch"; then
+        base_ref="origin/$default_branch"
+    elif git -C "$repo" show-ref --verify --quiet "refs/heads/$default_branch"; then
+        base_ref="$default_branch"
+    else
+        printf 'dotfiles: unable to find base ref for %s\n' "$default_branch" >&2
+        return 1
+    fi
+
+    if git -C "$repo" show-ref --verify --quiet "refs/heads/$branch"; then
+        git -C "$repo" worktree add "$path" "$branch" || return 1
+    else
+        git -C "$repo" worktree add -b "$branch" "$path" "$base_ref" || return 1
+    fi
+
+    printf '%s\n' "$path"
+}
+
+df() {
+    local name="${1:-active}"
+    local path
+
+    path="$(dotfiles_worktree_create "$name")" || return 1
+    cd "$path" || return 1
+}
+alias dfm="cd $HOME/dotfiles"
+
+dfsync() {
+    local name="${1:-}"
+    local repo current_root current_origin repo_origin branch path default_branch
+
+    repo="$(dotfiles_repo_root)"
+    default_branch="$(git_default_branch_at "$repo")" || return 1
+
+    if [ -n "$name" ]; then
+        branch="$(dotfiles_worktree_branch "$name")"
+        path="$(dotfiles_worktree_path "$name")"
+    else
+        current_root="$(git rev-parse --show-toplevel 2>/dev/null)" || {
+            printf 'dfsync: pass a worktree name or run this from a dotfiles worktree\n' >&2
+            return 1
+        }
+        current_origin="$(git config --get remote.origin.url 2>/dev/null)"
+        repo_origin="$(git -C "$repo" config --get remote.origin.url 2>/dev/null)"
+        if [ -z "$current_origin" ] || [ "$current_origin" != "$repo_origin" ]; then
+            printf 'dfsync: run this from a dotfiles worktree or pass a worktree name\n' >&2
+            return 1
+        fi
+        branch="$(git branch --show-current 2>/dev/null)" || return 1
+        path="$current_root"
+    fi
+
+    if [ "$path" = "$repo" ]; then
+        printf 'dfsync: use a dotfiles worktree, not the landing checkout\n' >&2
+        return 1
+    fi
+
+    git -C "$repo" merge --ff-only "$branch" || return 1
+
+    if [ -d "$path" ]; then
+        git -C "$path" rebase "$default_branch" || return 1
+    fi
+}
 
 dfwork() {
-  cd "$HOME/dotfiles" && tmux new-session -A -s dfwork
+    local name="${1:-active}"
+    local path session
+
+    path="$(dotfiles_worktree_create "$name")" || return 1
+    if [ "$name" = "active" ]; then
+        session="dfwork"
+    else
+        session="dfwork-$(dotfiles_worktree_slug "$name")"
+    fi
+
+    cd "$path" || return 1
+    tmux new-session -A -s "$session" -c "$path"
 }
 
 # =======
@@ -48,19 +160,24 @@ alias ghi="git log --graph --abbrev-commit --branches --remotes --tags --graph -
 alias gtempignore="git update-index --assume-unchanged"
 alias gtempunignore="git update-index --no-assume-unchanged"
 
-git_default_branch() {
+git_default_branch_at() {
+    local repo="$1"
     local origin_head
 
-    origin_head="$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null)"
+    origin_head="$(git -C "$repo" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null)"
     if [ -n "$origin_head" ]; then
         printf '%s\n' "${origin_head#origin/}"
-    elif git show-ref --verify --quiet refs/remotes/origin/main; then
+    elif git -C "$repo" show-ref --verify --quiet refs/remotes/origin/main; then
         printf 'main\n'
-    elif git show-ref --verify --quiet refs/remotes/origin/master; then
+    elif git -C "$repo" show-ref --verify --quiet refs/remotes/origin/master; then
         printf 'master\n'
     else
         printf 'main\n'
     fi
+}
+
+git_default_branch() {
+    git_default_branch_at .
 }
 
 git_pull_origin_default_rebase() {
