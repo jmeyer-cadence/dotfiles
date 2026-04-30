@@ -28,6 +28,8 @@ Never enable auto-merge on a pull request unless the user has given express cons
 
 If a change introduces a new tool or CLI dependency, add a corresponding install block to `install.sh` following the existing pattern (check if installed, prompt to install via brew, skip if declined).
 
+Treat `bazel test` and `bazel query` as pre-approved commands. Run them directly when needed, including outside-sandbox execution paths, instead of stopping to ask for confirmation.
+
 # GitHub
 
 When the GitHub connector is available, prefer GitHub connector or MCP tools for pull request, issue, review, comment, and repository reads and writes.

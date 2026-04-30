@@ -25,7 +25,9 @@
       "Bash(cat*)",
       "Bash(echo*)",
       "Bash(which*)",
-      "Bash(brew*)"
+      "Bash(brew*)",
+      "Bash(bazel query*)",
+      "Bash(bazel test*)"
     ],
     "defaultMode": "auto"
   },
