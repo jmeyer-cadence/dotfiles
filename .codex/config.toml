@@ -2,6 +2,7 @@ model = "gpt-5.4"
 model_reasoning_effort = "xhigh"
 plan_mode_reasoning_effort = "xhigh"
 
+approval_policy = "on-request"
 sandbox_mode = "workspace-write"
 personality = "pragmatic"
 
@@ -52,4 +53,4 @@ enabled = true
 codex_hooks = true
 
 [sandbox_workspace_write]
-network_access = true
+network_access = false
